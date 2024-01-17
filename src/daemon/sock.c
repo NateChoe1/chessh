@@ -15,9 +15,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_LEGAL
-#define HAVE_LEGAL
+#include <stdio.h>
+#include <string.h>
 
-extern void print_legal(void);
+#include <sys/un.h>
+#include <sys/socket.h>
 
-#endif
+#include <daemon/sock.h>
+
+int setup_unix_sock(char *path) {
+	int fd;
+	struct sockaddr_un addr;
+
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		perror("socket() failed");
+		return -1;
+	}
+
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, path, sizeof addr.sun_path - 1);
+	addr.sun_path[sizeof addr.sun_path - 1] = '\0';
+	if (bind(fd, (struct sockaddr *) &addr, sizeof addr) < 0) {
+		perror("bind() failed");
+		return -1;
+	}
+
+	if (listen(fd, 1024)) {
+		perror("listen() failed");
+		return -1;
+	}
+
+	return fd;
+}

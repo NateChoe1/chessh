@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_LEGAL
-#define HAVE_LEGAL
+#ifndef HAVE_DAEMON_RUNNER
+#define HAVE_DAEMON_RUNNER
 
-extern void print_legal(void);
+extern int run_daemon(int sockfd);
 
 #endif

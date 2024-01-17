@@ -15,9 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_LEGAL
-#define HAVE_LEGAL
+#ifndef HAVE_COPYFD
+#define HAVE_COPYFD
 
-extern void print_legal(void);
+#include <stddef.h>
+
+/* returns 0 on success, -1 on failure */
+extern int sendfds(int dest, int fds[], int fdcount, void *data, size_t len);
+
+/* returns the number of received fds on success, -1 on failure */
+extern int recvfds(int src,  int fds[], int fdcount,
+		void *data, size_t len, ssize_t *received_data);
 
 #endif

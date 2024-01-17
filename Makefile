@@ -13,7 +13,7 @@ LDFLAGS_SHARED =
 LDFLAGS_DAEMON =
 LDFLAGS_CLIENT =
 
-CFLAGS_SHARED := -O2 -pipe -Wall -Wpedantic -Wshadow -ansi
+CFLAGS_SHARED := -O2 -pipe -Wall -Wpedantic -Wextra
 CFLAGS_DAEMON :=
 CFLAGS_CLIENT :=
 

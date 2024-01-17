@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_LEGAL
-#define HAVE_LEGAL
+#ifndef HAVE_DAEMON_SOCK
+#define HAVE_DAEMON_SOCK
 
-extern void print_legal(void);
+extern int setup_unix_sock(char *path);
 
 #endif
