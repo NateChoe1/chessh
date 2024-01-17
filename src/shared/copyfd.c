@@ -23,7 +23,10 @@
  * ;)
  * */
 
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
+
 #include <alloca.h>
 #include <sys/socket.h>
 
@@ -59,10 +62,14 @@ int sendfds(int dest, int fds[], int fdcount, void *data, size_t len) {
 	cmsg->cmsg_type = SCM_RIGHTS;
 	cmsg->cmsg_len = CMSG_LEN(fdcount * sizeof *fds);
 	memcpy(CMSG_DATA(cmsg), fds, fdcount * sizeof *fds);
-	return sendmsg(dest, &msg, 0) == -1 ? -1 : 0;
+	if (sendmsg(dest, &msg, 0) < 0) {
+		perror("sendmsg() failed");
+		return -1;
+	}
+	return 0;
 }
 
-int recvfd(int src, int fds[], int fdcount,
+int recvfds(int src, int fds[], int fdcount,
 		void *data, size_t len, ssize_t *received_data) {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -85,17 +92,21 @@ int recvfd(int src, int fds[], int fdcount,
 	msg.msg_iovlen = 1;
 
 	msg.msg_control = buff;
-	msg.msg_controllen = sizeof buff;
+	msg.msg_controllen = buff_len;
 	nr = recvmsg(src, &msg, 0);
 	if (nr < 0) {
+		perror("recvmsg() failed");
 		return -1;
 	}
-	*received_data = nr;
+	if (received_data != NULL) {
+		*received_data = nr;
+	}
 
 	cmsg = CMSG_FIRSTHDR(&msg);
-	if ((cmsg == NULL || cmsg->cmsg_len != CMSG_LEN(len)) ||
+	if ((cmsg == NULL || cmsg->cmsg_len < CMSG_LEN(len)) ||
 	    (cmsg->cmsg_level != SOL_SOCKET) ||
 	    (cmsg->cmsg_type != SCM_RIGHTS)) {
+		fputs("bad cmsg received\n", stderr);
 		return -1;
 	}
 

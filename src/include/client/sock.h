@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_DAEMON__RUNNER
-#define HAVE_DAEMON__RUNNER
+#ifndef HAVE_CLIENT__SOCK
+#define HAVE_CLIENT__SOCK
 
-extern int run_daemon(int sockfd);
+extern int unix_connect(char *sock_path);
 
 #endif

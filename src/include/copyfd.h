@@ -19,6 +19,7 @@
 #define HAVE_COPYFD
 
 #include <stddef.h>
+#include <sys/types.h>
 
 /* returns 0 on success, -1 on failure */
 extern int sendfds(int dest, int fds[], int fdcount, void *data, size_t len);

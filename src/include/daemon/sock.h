@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_DAEMON_SOCK
-#define HAVE_DAEMON_SOCK
+#ifndef HAVE_DAEMON__SOCK
+#define HAVE_DAEMON__SOCK
 
 extern int setup_unix_sock(char *path);
 

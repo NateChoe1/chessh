@@ -16,11 +16,79 @@
  * */
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <getopt.h>
 
 #include <legal.h>
+#include <client/sock.h>
+#include <client/runner.h>
 
-int main() {
-	puts("Hello from client!");
-	print_legal();
-	return 0;
+struct client_args {
+	char *dir;
+	char *user;
+	char *pass;
+};
+
+static void parse_args(int argc, char *argv[], struct client_args *ret);
+static void print_help(char *progname);
+
+int main(int argc, char *argv[]) {
+	struct client_args args;
+	char sock_path[4096];
+	int sock_fd;
+
+	parse_args(argc, argv, &args);
+	snprintf(sock_path, sizeof sock_path, "%s/matchmaker", args.dir);
+	sock_path[sizeof sock_path - 1] = '\0';
+	if ((sock_fd = unix_connect(sock_path)) < 0) {
+		return 1;
+	}
+
+	return run_client(sock_fd);
+}
+
+static void parse_args(int argc, char *argv[], struct client_args *ret) {
+	ret->dir = ret->user = ret->pass = NULL;
+
+	for (;;) {
+		int opt = getopt(argc, argv, "hld:u:p:");
+		switch (opt) {
+		case -1:
+			goto got_args;
+		case 'h':
+			print_help(argv[0]);
+			exit(EXIT_SUCCESS);
+		case 'l':
+			print_legal();
+			exit(EXIT_SUCCESS);
+		case 'd':
+			ret->dir = optarg;
+			break;
+		case 'u':
+			ret->user = optarg;
+			break;
+		case 'p':
+			ret->pass = optarg;
+			break;
+		default:
+			print_help(argv[0]);
+			exit(EXIT_FAILURE);
+		}
+	}
+got_args:
+
+	if (ret->dir == NULL || ret->user == NULL || ret->pass == NULL) {
+		fprintf(stderr, "%s: missing required argument\n", argv[0]);
+		print_help(argv[0]);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void print_help(char *progname) {
+	printf("Usage: %s -d [dir] -u [username] -p [password]\n"
+	       "OTHER FLAGS:\n"
+	       "  -h: Show this help and quit\n"
+	       "  -l: Show a legal notice and quit\n",
+	       progname);
 }

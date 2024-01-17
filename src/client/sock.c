@@ -15,9 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#ifndef HAVE_DAEMON__RUNNER
-#define HAVE_DAEMON__RUNNER
+#include <stdio.h>
 
-extern int run_daemon(int sockfd);
+#include <unistd.h>
+#include <sys/un.h>
+#include <sys/socket.h>
 
-#endif
+#include <client/sock.h>
+
+int unix_connect(char *path) {
+	int ret;
+	struct sockaddr_un addr;
+
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, path, sizeof addr.sun_path - 1);
+	addr.sun_path[sizeof addr.sun_path - 1] = '\0';
+
+	if ((ret = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		perror("socket() failed");
+		return -1;
+	}
+
+	if (connect(ret, (struct sockaddr *) &addr, (socklen_t) sizeof addr)
+			< 0) {
+		perror("connect() failed");
+		close(ret);
+		return -1;
+	}
+
+	return ret;
+}

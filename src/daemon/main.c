@@ -16,6 +16,7 @@
  * */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 
 #include <legal.h>
@@ -26,18 +27,15 @@ struct daemon_args {
 	char *dir;
 };
 
-static int parse_args(int argc, char *argv[], struct daemon_args *ret);
+static void parse_args(int argc, char *argv[], struct daemon_args *ret);
 static void print_help(char *progname);
 
 int main(int argc, char *argv[]) {
 	struct daemon_args args;
-	int arg_ret;
 	char sock_path[4096];
 	int sock_fd;
 
-	if ((arg_ret = parse_args(argc, argv, &args))) {
-		return arg_ret;
-	}
+	parse_args(argc, argv, &args);
 
 	snprintf(sock_path, sizeof sock_path, "%s/matchmaker", args.dir);
 	sock_path[sizeof sock_path - 1] = '\0';
@@ -48,7 +46,7 @@ int main(int argc, char *argv[]) {
 	return run_daemon(sock_fd);
 }
 
-static int parse_args(int argc, char *argv[], struct daemon_args *ret) {
+static void parse_args(int argc, char *argv[], struct daemon_args *ret) {
 	ret->dir = NULL;
 
 	for (;;) {
@@ -58,26 +56,24 @@ static int parse_args(int argc, char *argv[], struct daemon_args *ret) {
 			goto got_args;
 		case 'h':
 			print_help(argv[0]);
-			return 0;
+			exit(EXIT_SUCCESS);
 		case 'l':
 			print_legal();
-			return 0;
+			exit(EXIT_SUCCESS);
 		case 'd':
 			ret->dir = optarg;
 			break;
 		default:
 			print_help(argv[0]);
-			return 1;
+			exit(EXIT_FAILURE);
 		}
 	}
 got_args:
 
 	if (ret->dir == NULL) {
 		print_help(argv[0]);
-		return 1;
+		exit(EXIT_FAILURE);
 	}
-
-	return 0;
 }
 
 static void print_help(char *progname) {
