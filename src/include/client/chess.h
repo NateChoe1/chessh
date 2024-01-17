@@ -38,8 +38,7 @@ enum player {
 struct piece {
 	enum piece_type type;
 	enum player player;
-	bool has_moved;
-	bool can_pessant; /* only valid for pawns */
+	int moves; /* total no. of times this piece has moved */
 };
 
 struct board {
@@ -58,7 +57,20 @@ struct game {
 	int last_capture; /* for the 50 move draw rule */
 };
 
+struct move {
+	/* initial row/column */
+	int r_i;
+	int c_i;
+
+	/* final row/column */
+	int r_f;
+	int c_f;
+};
+
 extern struct game *new_game();
 extern void free_game(struct game *game);
+
+/* returns -1 on error, 0 on success */
+extern int make_move(struct game *game, struct move *move);
 
 #endif
