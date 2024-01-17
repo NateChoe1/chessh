@@ -44,6 +44,9 @@ static void match(int fd1, int fd2) {
 	int pipe1[2], pipe2[2];
 	int p1set[2], p2set[2];
 
+	/* buffers to send player ids */
+	int zero = 0, one = 1;
+
 	if (pipe(pipe1) == -1) {
 		perror("pipe() failed");
 		goto error1;
@@ -58,8 +61,8 @@ static void match(int fd1, int fd2) {
 	p2set[0] = pipe2[0];
 	p2set[1] = pipe1[1];
 
-	if (sendfds(fd1, p1set, 2, NULL, 0) < 0 ||
-	    sendfds(fd2, p2set, 2, NULL, 0) < 0) {
+	if (sendfds(fd1, p1set, 2, &zero, sizeof zero) < 0 ||
+	    sendfds(fd2, p2set, 2, &one,  sizeof one)  < 0) {
 		goto error3;
 	}
 

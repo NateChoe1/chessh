@@ -36,9 +36,12 @@ int run_client(int sock_fd) {
 	int fds[2];
 	struct pollfd pollfds[2];
 	int recvlen;
+	int pid;
+	ssize_t pidlen;
 
-	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds, NULL, 0, NULL))
-			< 2) {
+	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds,
+					&pid, sizeof pid, &pidlen)) < 2 ||
+	    pidlen < (ssize_t) sizeof pid) {
 		return 1;
 	}
 
