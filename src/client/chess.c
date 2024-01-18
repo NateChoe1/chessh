@@ -49,6 +49,11 @@ struct game *new_game() {
 		}
 	}
 
+	for (int i = 0; i < 8; ++i) {
+		ret->board.board[1][i].type = PAWN;
+		ret->board.board[6][i].type = PAWN;
+	}
+
 #define FIRST_ROW_PIECE(index, ptype) \
 	ret->board.board[0][index].type = ptype; \
 	ret->board.board[0][7-index].type = ptype; \
