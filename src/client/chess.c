@@ -193,8 +193,8 @@ int make_move(struct game *game, struct move *move) {
 				break;
 			}
 			if (move->r_i + direction*2 == move->r_f &&
-					p2->type == EMPTY &&
-					p1->moves == 0) {
+			    p2->type == EMPTY &&
+			    p1->moves == 0) {
 				break;
 			}
 
@@ -208,14 +208,16 @@ int make_move(struct game *game, struct move *move) {
 			struct piece *dst, *pessant;
 
 			dst = &game->board.board[move->r_f][move->c_f];
-			pessant = &game->board.board[move->r_f][move->c_i];
+			pessant = &game->board.board[move->r_i][move->c_f];
 			if (dst->player != piece->player) {
 				break;
 			}
+			/* holy hell */
 			if (dst->type == EMPTY &&
 			    pessant->type == PAWN &&
 			    pessant->player != piece->player &&
 			    pessant->moves == 1) {
+				pessant->type = EMPTY;
 				break;
 			}
 			return -1;
