@@ -23,7 +23,8 @@
 #include <util.h>
 #include <client/chess.h>
 
-static void move_unchecked(struct piece *src, struct piece *dst);
+static void move_unchecked(struct game *game,
+		struct piece *src, struct piece *dst);
 
 /* XXX: This isn't a very good function */
 struct game *new_game() {
@@ -224,12 +225,17 @@ int make_move(struct game *game, struct move *move) {
 		return -1;
 	}
 
-	move_unchecked(piece, dst);
+	move_unchecked(game, piece, dst);
 
 	return 0;
 }
 
-static void move_unchecked(struct piece *src, struct piece *dst) {
+static void move_unchecked(struct game *game,
+		struct piece *src, struct piece *dst) {
+	++game->duration;
+	if (dst->type != EMPTY) {
+		game->last_capture = game->duration;
+	}
 	memcpy(dst, src, sizeof *dst);
 	++dst->moves;
 	src->type = EMPTY;

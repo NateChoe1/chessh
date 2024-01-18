@@ -25,7 +25,7 @@
 #include <client/runner.h>
 
 static int parse_cmd(struct game *game, char *move);
-static void print_board(struct game *game);
+static void print_board(struct game *game, int player);
 
 int run_client(int sock_fd) {
 	int fds[2];
@@ -52,22 +52,27 @@ int run_client(int sock_fd) {
 
 	game = new_game();
 
-	print_board(game);
+	print_board(game, pid);
 
 	for (int i = 0;; i = (i+1) % 2) {
 		char cmd[1024];
 		ssize_t cmdlen;
+again:
 		cmdlen = read(rotation[i], cmd, sizeof cmd);
 		errno = 0;
+		cmd[cmdlen-1] = '\0';
+		if (parse_cmd(game, cmd) < 0) {
+			fprintf(stderr, "Invalid move received: %s\n", cmd);
+			if (rotation[i] == 0) {
+				print_board(game, pid);
+				goto again;
+			}
+		}
 		if (rotation[i] == 0 &&
 		    write(fds[1], cmd, cmdlen) < cmdlen) {
 			perror("short write");
 		}
-		cmd[cmdlen-1] = '\0';
-		if (parse_cmd(game, cmd) < 0) {
-			fprintf(stderr, "Invalid move received: %s\n", cmd);
-		}
-		print_board(game);
+		print_board(game, pid);
 	}
 
 	return 0;
@@ -82,9 +87,9 @@ static int parse_cmd(struct game *game, char *move) {
 	return make_move(game, &move_s);
 }
 
-static void print_board(struct game *game) {
-	for (int i = 0; i < 8; ++i) {
-		for (int j = 0; j < 8; ++j) {
+static void print_board(struct game *game, int player) {
+	for (int i = player ? 7:0; i != (player ? -1:8); i += player ? -1:1) {
+		for (int j = player ? 7:0; j != (player ? -1:8); j += player ? -1:1) {
 			struct piece *piece = &game->board.board[i][j];
 			char filler = (i+j)%2==0 ? ' ':'#';
 			char pc = '.';
@@ -97,8 +102,17 @@ static void print_board(struct game *game) {
 			case PAWN: pc = 'p'; break;
 			case EMPTY: pc = filler; break;
 			}
-			putchar(filler);
+			if (piece->type != EMPTY) {
+				if (piece->player == WHITE) {
+					fputs("\033[47;30m", stdout);
+				}
+				else {
+					fputs("\033[40;37m", stdout);
+				}
+			}
 			putchar(pc);
+			fputs("\033[0m", stdout);
+			putchar(filler);
 		}
 		putchar('\n');
 	}
