@@ -193,7 +193,8 @@ int make_move(struct game *game, struct move *move) {
 				break;
 			}
 			if (move->r_i + direction*2 == move->r_f &&
-					p2->type != EMPTY) {
+					p2->type == EMPTY &&
+					p1->moves == 0) {
 				break;
 			}
 
