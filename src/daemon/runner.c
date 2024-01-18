@@ -16,6 +16,7 @@
  * */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -28,6 +29,7 @@
 static void match(int fd1, int fd2);
 
 int run_daemon(int sockfd) {
+	/* TODO: Make this more sophisticated */
 	for (;;) {
 		int p1fd, p2fd;
 		struct sockaddr_un addr;
@@ -44,8 +46,18 @@ static void match(int fd1, int fd2) {
 	int pipe1[2], pipe2[2];
 	int p1set[2], p2set[2];
 
-	/* buffers to send player ids */
-	int zero = 0, one = 1;
+	/* Buffers to send player ids */
+	int id1, id2;
+
+	/* Randomize white and black  */
+	if (random() % 2 == 0) {
+		id1 = 0;
+		id2 = 1;
+	}
+	else {
+		id1 = 1;
+		id2 = 0;
+	}
 
 	if (pipe(pipe1) == -1) {
 		perror("pipe() failed");
@@ -61,8 +73,8 @@ static void match(int fd1, int fd2) {
 	p2set[0] = pipe2[0];
 	p2set[1] = pipe1[1];
 
-	if (sendfds(fd1, p1set, 2, &zero, sizeof zero) < 0 ||
-	    sendfds(fd2, p2set, 2, &one,  sizeof one)  < 0) {
+	if (sendfds(fd1, p1set, 2, &id1, sizeof id1) < 0 ||
+	    sendfds(fd2, p2set, 2, &id2, sizeof id2) < 0) {
 		goto error3;
 	}
 
