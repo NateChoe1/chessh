@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -42,6 +43,8 @@ int main(int argc, char *argv[]) {
 	if ((sock_fd = setup_unix_sock(sock_path)) < 0) {
 		return 1;
 	}
+
+	srand(time(NULL));
 
 	return run_daemon(sock_fd);
 }

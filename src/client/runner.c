@@ -21,7 +21,6 @@
 
 #include <unistd.h>
 
-#include <readline/history.h>
 #include <readline/readline.h>
 
 #include <copyfd.h>
