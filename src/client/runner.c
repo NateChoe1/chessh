@@ -15,16 +15,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <unistd.h>
+
+#include <readline/history.h>
+#include <readline/readline.h>
 
 #include <copyfd.h>
 #include <client/chess.h>
 #include <client/runner.h>
 
+#define ERR_FATAL -2
+#define ERR_INVALID -1
+
 static int parse_cmd(struct game *game, char *move);
+static int parse_user_move(struct game *game, int peerfd);
+static int parse_op_move(struct game *game, int fd);
 static void print_letters(int player);
 static void print_board(struct game *game, int player);
 
@@ -34,7 +43,6 @@ int run_client(int sock_fd) {
 	int recvlen;
 	ssize_t pidlen;
 	struct game *game;
-	int rotation[2];
 
 	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds,
 					&pid, sizeof pid, &pidlen)) < 2 ||
@@ -42,37 +50,27 @@ int run_client(int sock_fd) {
 		return 1;
 	}
 
-	if (pid == 0) {
-		rotation[0] = 0;
-		rotation[1] = fds[0];
-	}
-	else {
-		rotation[0] = fds[0];
-		rotation[1] = 0;
-	}
-
 	game = new_game();
 
 	print_board(game, pid);
-
-	for (int i = 0;; i = (i+1) % 2) {
-		char cmd[1024];
-		ssize_t cmdlen;
-again:
-		cmdlen = read(rotation[i], cmd, sizeof cmd);
-		errno = 0;
-		cmd[cmdlen-1] = '\0';
-		if (parse_cmd(game, cmd) < 0) {
-			fprintf(stderr, "Invalid move received: %s\n", cmd);
-			if (rotation[i] == 0) {
-				print_board(game, pid);
-				goto again;
+	for (int curr_player = 0;; curr_player = !curr_player) {
+		int move_code;
+		if (curr_player == pid) {
+			while ((move_code = parse_user_move(game, fds[1]))) {
+				switch (move_code) {
+				case ERR_FATAL:
+					exit(EXIT_FAILURE);
+				case ERR_INVALID:
+					fputs("Invalid move\n", stderr);
+					break;
+				}
 			}
 		}
-		if (rotation[i] == 0 &&
-		    write(fds[1], cmd, cmdlen) < cmdlen) {
-			perror("short write");
+		else {
+			puts("Waiting on opponent's move");
+			while (parse_op_move(game, fds[0])) ;
 		}
+
 		print_board(game, pid);
 	}
 
@@ -86,6 +84,49 @@ static int parse_cmd(struct game *game, char *move) {
 	move_s.c_f = move[2] - 'a';
 	move_s.r_f = 8 - (move[3] - '0');
 	return make_move(game, &move_s);
+}
+
+static int parse_user_move(struct game *game, int peerfd) {
+	char *move;
+	move = readline("Your move: ");
+	if (move == NULL) {
+		return ERR_FATAL;
+	}
+	for (int i = 0; i < 4; ++i) {
+		if (move[i] == '\0') {
+			return ERR_INVALID;
+		}
+	}
+	if (move[4] != '\0') {
+		return ERR_INVALID;
+	}
+	if (parse_cmd(game, move)) {
+		return ERR_INVALID;
+	}
+	if (write(peerfd, move, 5) < 5) {
+		return 0;
+	}
+	return 0;
+}
+
+static int parse_op_move(struct game *game, int fd) {
+	char buff[5];
+	size_t seen;
+	for (seen = 0; seen < sizeof buff;) {
+		ssize_t thisread;
+		thisread = read(fd, buff, sizeof buff - seen);
+		if (thisread < 0) {
+			return ERR_FATAL;
+		}
+		seen += thisread;
+	}
+	if (buff[sizeof buff - 1] != '\0') {
+		return ERR_FATAL;
+	}
+	if (parse_cmd(game, buff)) {
+		return ERR_INVALID;
+	}
+	return 0;
 }
 
 static void print_letters(int player) {
