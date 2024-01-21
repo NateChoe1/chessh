@@ -20,7 +20,7 @@ LDFLAGS_CLIENT =
 #LDFLAGS_DAEMON += $(shell pkg-config --libs $(LIBS_DAEMON))
 LDFLAGS_CLIENT += $(shell pkg-config --libs $(LIBS_CLIENT))
 
-CFLAGS_SHARED = -O2 -pipe -Wall -Wpedantic -Wextra
+CFLAGS_SHARED = -O2 -pipe -Wall -Wpedantic -Wextra -Werror
 CFLAGS_DAEMON =
 CFLAGS_CLIENT =
 #CFLAGS_SHARED += $(shell pkg-config --cflags $(LIBS_SHARED)) -Isrc/include

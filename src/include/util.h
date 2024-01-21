@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define UNUSED(param) do { (void) param ; } while (0)
+
 static inline bool is_in_bounds(int val, int min, int max) {
 	return min <= val && val < max;
 }

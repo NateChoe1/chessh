@@ -39,6 +39,7 @@ struct piece {
 	enum piece_type type;
 	enum player player;
 	int moves; /* total no. of times this piece has moved */
+	int last_move; /* last time this piece has moved */
 };
 
 struct board {
@@ -54,7 +55,7 @@ struct game {
 	struct board board;
 	int duration; /* no. of turns played, includes both black and white's
 			 moves */
-	int last_capture; /* for the 50 move draw rule */
+	int last_big_move; /* Last capture/pawn move, for the 50 move rule */
 };
 
 struct move {
@@ -65,12 +66,23 @@ struct move {
 	/* final row/column */
 	int r_f;
 	int c_f;
+
+	/* promote to this piece, if valid. if unspecified by the user, set to
+	 * EMPTY */
+	enum piece_type promotion;
 };
 
 extern struct game *new_game();
 extern void free_game(struct game *game);
 
-/* returns -1 on error, 0 on success */
+#define ILLEGAL_MOVE -1
+#define WHITE_WIN -2
+#define BLACK_WIN -3
+#define FORCED_DRAW -4
+#define MISSING_PROMOTION -5
+#define IO_ERROR -6
+#define DRAW_OFFER 1
+/* returns >=0 on success */
 extern int make_move(struct game *game, struct move *move);
 
 #endif

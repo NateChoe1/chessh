@@ -27,9 +27,6 @@
 #include <client/chess.h>
 #include <client/runner.h>
 
-#define ERR_FATAL -2
-#define ERR_INVALID -1
-
 static int parse_cmd(struct game *game, char *move);
 static int parse_user_move(struct game *game, int peerfd);
 static int parse_op_move(struct game *game, int fd);
@@ -56,13 +53,15 @@ int run_client(int sock_fd) {
 		int move_code;
 		if (curr_player == pid) {
 			while ((move_code = parse_user_move(game, fds[1]))) {
-				switch (move_code) {
-				case ERR_FATAL:
-					exit(EXIT_FAILURE);
-				case ERR_INVALID:
-					fputs("Invalid move\n", stderr);
+				if (move_code >= 0) {
 					break;
 				}
+				if (move_code == ILLEGAL_MOVE) {
+					puts("Illegal move!");
+					continue;
+				}
+				puts("Game over!");
+				goto end;
 			}
 		}
 		else {
@@ -72,7 +71,7 @@ int run_client(int sock_fd) {
 
 		print_board(game, pid);
 	}
-
+end:
 	return 0;
 }
 
@@ -87,23 +86,24 @@ static int parse_cmd(struct game *game, char *move) {
 
 static int parse_user_move(struct game *game, int peerfd) {
 	char *move;
+	int code;
 	move = readline("Your move: ");
 	if (move == NULL) {
-		return ERR_FATAL;
+		return IO_ERROR;
 	}
 	for (int i = 0; i < 4; ++i) {
 		if (move[i] == '\0') {
-			return ERR_INVALID;
+			return ILLEGAL_MOVE;
 		}
 	}
 	if (move[4] != '\0') {
-		return ERR_INVALID;
+		return ILLEGAL_MOVE;
 	}
-	if (parse_cmd(game, move)) {
-		return ERR_INVALID;
+	if ((code = parse_cmd(game, move))) {
+		return code;
 	}
 	if (write(peerfd, move, 5) < 5) {
-		return 0;
+		return IO_ERROR;
 	}
 	return 0;
 }
@@ -111,19 +111,20 @@ static int parse_user_move(struct game *game, int peerfd) {
 static int parse_op_move(struct game *game, int fd) {
 	char buff[5];
 	size_t seen;
+	int code;
 	for (seen = 0; seen < sizeof buff;) {
 		ssize_t thisread;
 		thisread = read(fd, buff, sizeof buff - seen);
 		if (thisread < 0) {
-			return ERR_FATAL;
+			return IO_ERROR;
 		}
 		seen += thisread;
 	}
 	if (buff[sizeof buff - 1] != '\0') {
-		return ERR_FATAL;
+		return IO_ERROR;
 	}
-	if (parse_cmd(game, buff)) {
-		return ERR_INVALID;
+	if ((code = parse_cmd(game, buff))) {
+		return code;
 	}
 	return 0;
 }
