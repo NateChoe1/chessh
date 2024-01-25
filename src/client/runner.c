@@ -34,6 +34,26 @@ static int parse_op_move(struct game *game, int fd);
 static void print_letters(int player);
 static void print_board(struct game *game, int player);
 
+static char **piecesyms;
+static char *emojisyms[] = {
+	[ROOK]   = "♜ ",
+	[KNIGHT] = "♞ ",
+	[BISHOP] = "♝ ",
+	[QUEEN]  = "♛ ",
+	[KING]   = "♚ ",
+	[PAWN]   = "♟︎ ",
+	[EMPTY]  = "  ",
+};
+static char *portsyms[] = {
+	[ROOK]   = "R ",
+	[KNIGHT] = "N ",
+	[BISHOP] = "B ",
+	[QUEEN]  = "Q ",
+	[KING]   = "K ",
+	[PAWN]   = "P ",
+	[EMPTY]  = "  ",
+};
+
 int run_client(int sock_fd) {
 	int fds[2];
 	int pid;
@@ -45,6 +65,25 @@ int run_client(int sock_fd) {
 					&pid, sizeof pid, &pidlen)) < 2 ||
 	    pidlen < (ssize_t) sizeof pid) {
 		return 1;
+	}
+
+	for (;;) {
+		char *charset;
+		charset = readline("Which piece symbols would you like? [unicode/ascii]: ");
+		if (charset == NULL) {
+			puts("Failed to read response, assuming ascii");
+			piecesyms = portsyms;
+			break;
+		}
+		if (strcmp(charset, "unicode") == 0) {
+			piecesyms = emojisyms;
+			break;
+		}
+		if (strcmp(charset, "ascii") == 0) {
+			piecesyms = portsyms;
+			break;
+		}
+		puts("Invalid response");
 	}
 
 	game = new_game();
@@ -147,19 +186,10 @@ static void print_board(struct game *game, int player) {
 		for (int j = 0; j < 8; ++j) {
 			int col = player == 0 ? j : 7-j;
 			struct piece *piece = &game->board.board[row][col];
-			char *sym = "  ";
+			char *sym = piecesyms[piece->type];
 
 			fputs((row+col)%2==0 ? "\33[45":"\33[44", stdout);
 			fputs(piece->player==0 ? ";37m":";30m", stdout);
-			switch (piece->type) {
-			case ROOK:   sym = "♜ "; break;
-			case KNIGHT: sym = "♞ "; break;
-			case BISHOP: sym = "♝ "; break;
-			case QUEEN:  sym = "♛ "; break;
-			case KING:   sym = "♚ "; break;
-			case PAWN:   sym = "♟︎ "; break;
-			case EMPTY:  sym = "  "; break;
-			}
 			fputs(sym, stdout);
 		}
 		printf("\33[0m %d\n", 8 - row);
