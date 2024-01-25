@@ -59,6 +59,11 @@ static void move_unchecked(struct game *game, struct move *move, struct piece *c
  * XXX: this function breaks with en pessant */
 static bool piece_is_attacked(struct game *game, int r, int c, enum player player);
 
+/* checks if `player` is in check */
+static bool is_in_check(struct game *game, enum player player);
+
+enum player get_player(struct game *game);
+
 #define PARSE_MOVE(game, move, src, dst) \
 	do { \
 		src = &game->board.board[move->r_i][move->c_i]; \
@@ -118,6 +123,8 @@ int make_move(struct game *game, struct move *move) {
 	struct piece *captured;
 	struct move castle;
 	int error_code;
+	struct game backup;
+	enum player curr_player;
 
 	captured = NULL;
 	castle.r_i = castle.r_f = castle.c_i = castle.c_f = -1;
@@ -126,9 +133,25 @@ int make_move(struct game *game, struct move *move) {
 		return error_code;
 	}
 
+	curr_player = get_player(game);
+	memcpy(&backup, game, sizeof backup);
+
 	move_unchecked(game, move, captured, true);
 	if (castle.r_i != -1) {
 		move_unchecked(game, &castle, NULL, false);
+	}
+
+	if (is_in_check(game, curr_player)) {
+		memcpy(game, &backup, sizeof *game);
+		return ILLEGAL_MOVE;
+	}
+
+	if (game->duration - game->last_big_move >= 150) {
+		return FORCED_DRAW;
+	}
+
+	if (game->duration - game->last_big_move >= 100) {
+		return DRAW_OFFER;
 	}
 
 	return error_code;
@@ -146,7 +169,7 @@ static int is_illegal(struct game *game, struct move *move, struct piece **captu
 	PARSE_MOVE(game, move, piece, dst);
 
 	/* reject out of sequence moves */
-	if (!!(piece->player == WHITE) != !!(game->duration % 2 == 0)) {
+	if (piece->player != get_player(game)) {
 		return ILLEGAL_MOVE;
 	}
 
@@ -443,4 +466,24 @@ static bool piece_is_attacked(struct game *game, int r, int c, enum player playe
 		}
 	}
 	return false;
+}
+
+static bool is_in_check(struct game *game, enum player player) {
+	int kr, kc;
+	for (kr = 0; kr < 8; ++kr) {
+		for (kc = 0; kc < 8; ++kc) {
+			if (game->board.board[kr][kc].type == KING &&
+			    game->board.board[kr][kc].player == player) {
+				goto found_king;
+			}
+		}
+	}
+	/* somehow the king is gone? */
+	return true;
+found_king:
+	return piece_is_attacked(game, kr, kc, player);
+}
+
+enum player get_player(struct game *game) {
+	return game->duration % 2 == 0 ? WHITE : BLACK;
 }
