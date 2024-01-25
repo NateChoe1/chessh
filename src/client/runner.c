@@ -17,6 +17,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 
 #include <unistd.h>
@@ -77,9 +78,9 @@ end:
 
 static int parse_cmd(struct game *game, char *move) {
 	struct move move_s;
-	move_s.c_i = move[0] - 'a';
+	move_s.c_i = tolower(move[0]) - 'a';
 	move_s.r_i = 8 - (move[1] - '0');
-	move_s.c_f = move[2] - 'a';
+	move_s.c_f = tolower(move[2]) - 'a';
 	move_s.r_f = 8 - (move[3] - '0');
 	return make_move(game, &move_s);
 }
