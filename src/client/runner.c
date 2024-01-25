@@ -75,6 +75,9 @@ int run_client(int sock_fd) {
 			piecesyms = portsyms;
 			break;
 		}
+		for (int i = 0; charset[i] != '\0'; ++i) {
+			charset[i] = tolower(charset[i]);
+		}
 		if (strcmp(charset, "unicode") == 0) {
 			piecesyms = emojisyms;
 			break;
