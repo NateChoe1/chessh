@@ -99,8 +99,12 @@ int run_client(int sock_fd) {
 				if (move_code >= 0) {
 					break;
 				}
-				if (move_code == ILLEGAL_MOVE) {
+				switch (move_code) {
+				case ILLEGAL_MOVE:
 					puts("Illegal move!");
+					continue;
+				case MISSING_PROMOTION:
+					puts("Missing promotion!");
 					continue;
 				}
 				puts("Game over!");
@@ -120,10 +124,20 @@ end:
 
 static int parse_cmd(struct game *game, char *move) {
 	struct move move_s;
+	if (strlen(move) < 4) {
+		return ILLEGAL_MOVE;
+	}
 	move_s.c_i = tolower(move[0]) - 'a';
 	move_s.r_i = 8 - (move[1] - '0');
 	move_s.c_f = tolower(move[2]) - 'a';
 	move_s.r_f = 8 - (move[3] - '0');
+	move_s.promotion = EMPTY;
+	switch (tolower(move[4])) {
+	case 'n': move_s.promotion = KNIGHT; break;
+	case 'q': move_s.promotion = QUEEN;  break;
+	case 'r': move_s.promotion = ROOK;   break;
+	case 'b': move_s.promotion = BISHOP; break;
+	}
 	return make_move(game, &move_s);
 }
 
@@ -133,14 +147,6 @@ static int parse_user_move(struct game *game, int peerfd) {
 	move = readline("Your move: ");
 	if (move == NULL) {
 		return IO_ERROR;
-	}
-	for (int i = 0; i < 4; ++i) {
-		if (move[i] == '\0') {
-			return ILLEGAL_MOVE;
-		}
-	}
-	if (move[4] != '\0') {
-		return ILLEGAL_MOVE;
 	}
 	if ((code = parse_cmd(game, move))) {
 		return code;

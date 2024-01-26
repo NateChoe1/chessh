@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -32,7 +33,7 @@
  *                as a pawn taken by en pessant (holy hell)
  * postcondition: *castle MAY be set to some move that also happens, probably
  *                due to castling. */
-static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle);
+static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle, enum player player);
 
 /* precondition: game, move, captured, and castle are all valid pointers
  *               *captured == *castle = NULL
@@ -61,6 +62,12 @@ static bool piece_is_attacked(struct game *game, int r, int c, enum player playe
 
 /* checks if `player` is in check */
 static bool is_in_check(struct game *game, enum player player);
+
+/* checks if `player` has a valid move to make */
+static bool can_make_move(struct game *game, enum player player);
+
+/* checks if the piece at [row][col] can make a move */
+static bool piece_can_move(struct game *game, int row, int col);
 
 enum player get_player(struct game *game);
 
@@ -124,16 +131,18 @@ int make_move(struct game *game, struct move *move) {
 	struct move castle;
 	int error_code;
 	struct game backup;
-	enum player curr_player;
+	enum player curr_player, other_player;
+
+	curr_player = get_player(game);
+	other_player = curr_player == WHITE ? BLACK : WHITE;
 
 	captured = NULL;
 	castle.r_i = castle.r_f = castle.c_i = castle.c_f = -1;
 
-	if ((error_code = is_illegal(game, move, &captured, &castle)) < 0) {
+	if ((error_code = is_illegal(game, move, &captured, &castle, curr_player)) < 0) {
 		return error_code;
 	}
 
-	curr_player = get_player(game);
 	memcpy(&backup, game, sizeof backup);
 
 	move_unchecked(game, move, captured, true);
@@ -154,10 +163,18 @@ int make_move(struct game *game, struct move *move) {
 		return DRAW_OFFER;
 	}
 
+	if (!can_make_move(game, other_player)) {
+		if (is_in_check(game, other_player)) {
+			return curr_player == WHITE ?  WHITE_WIN : BLACK_WIN;
+		}
+		return FORCED_DRAW;
+	}
+
+
 	return error_code;
 }
 
-static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle) {
+static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle, enum player player) {
 	struct piece *piece, *dst;
 
 	/* reject out-of-bounds moves */
@@ -169,7 +186,7 @@ static int is_illegal(struct game *game, struct move *move, struct piece **captu
 	PARSE_MOVE(game, move, piece, dst);
 
 	/* reject out of sequence moves */
-	if (piece->player != get_player(game)) {
+	if (piece->player != player) {
 		return ILLEGAL_MOVE;
 	}
 
@@ -377,7 +394,7 @@ static int pawn_is_illegal(struct game *game, struct move *move, struct piece **
 		}
 		if (move->r_i + direction*2 == move->r_f &&
 		    p2->type == EMPTY &&
-		    p1->moves == 0) {
+		    piece->moves == 0) {
 			goto promote_pawn;
 		}
 
@@ -409,8 +426,8 @@ static int pawn_is_illegal(struct game *game, struct move *move, struct piece **
 	return ILLEGAL_MOVE;
 promote_pawn:
 
-	if ((piece->player == WHITE && move->r_f == 7) ||
-	    (piece->player == BLACK && move->r_f == 0)) {
+	if ((piece->player == WHITE && move->r_f == 0) ||
+	    (piece->player == BLACK && move->r_f == 7)) {
 		switch (move->promotion) {
 		case ROOK: case KNIGHT: case BISHOP: case QUEEN:
 			piece->type = move->promotion;
@@ -442,6 +459,7 @@ static void move_unchecked(struct game *game, struct move *move, struct piece *c
 }
 
 static bool piece_is_attacked(struct game *game, int r, int c, enum player player) {
+	enum player other_player = player == WHITE ? BLACK : WHITE;
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
 			struct move move;
@@ -460,7 +478,7 @@ static bool piece_is_attacked(struct game *game, int r, int c, enum player playe
 			move.r_f = r;
 			move.c_f = c;
 			move.promotion = QUEEN;
-			if (is_illegal(game, &move, &captured, &castle) >= 0) {
+			if (is_illegal(game, &move, &captured, &castle, other_player) >= 0) {
 				return true;
 			}
 		}
@@ -482,6 +500,45 @@ static bool is_in_check(struct game *game, enum player player) {
 	return true;
 found_king:
 	return piece_is_attacked(game, kr, kc, player);
+}
+
+static bool can_make_move(struct game *game, enum player player) {
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j){
+			if (game->board.board[i][j].type == EMPTY ||
+			    game->board.board[i][j].player != player) {
+				continue;
+			}
+			if (piece_can_move(game, i, j)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+static bool piece_can_move(struct game *game, int row, int col) {
+	struct piece *piece = &game->board.board[row][col];
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			struct move move;
+			struct piece *captured;
+			struct move castle;
+			move.r_i = row;
+			move.c_i = col;
+			move.r_f = i;
+			move.c_f = j;
+			captured = NULL;
+			castle.r_i = castle.r_f = castle.c_i = castle.c_f = -1;
+			move.promotion = QUEEN;
+			if (is_illegal(game, &move, &captured, &castle, piece->player) >= 0) {
+				printf("%d %d %d %d\n", row, col, i, j);
+				printf("%d %d %d %d\n", move.r_i, move.c_i, move.r_f, move.c_f);
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 enum player get_player(struct game *game) {
