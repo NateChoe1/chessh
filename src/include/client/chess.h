@@ -82,6 +82,9 @@ extern void free_game(struct game *game);
 #define MISSING_PROMOTION -5
 #define IO_ERROR -6
 #define DRAW_OFFER 1
+
+#define NONFATAL_ERROR ILLEGAL_MOVE: case MISSING_PROMOTION
+
 /* returns >=0 on success */
 extern int make_move(struct game *game, struct move *move);
 

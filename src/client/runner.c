@@ -167,7 +167,7 @@ static int parse_user_move(struct game *game, int peerfd) {
 	}
 	if ((code = parse_cmd(game, move))) {
 		switch (code) {
-		case ILLEGAL_MOVE: case MISSING_PROMOTION:
+		case NONFATAL_ERROR:
 			return code;
 		default:
 			break;

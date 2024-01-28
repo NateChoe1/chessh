@@ -146,7 +146,7 @@ int make_move(struct game *game, struct move *move) {
 	error_code = make_move_no_checkmate(game, move);
 
 	switch (error_code) {
-	case ILLEGAL_MOVE: case MISSING_PROMOTION:
+	case NONFATAL_ERROR:
 		return error_code;
 	}
 
