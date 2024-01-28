@@ -607,7 +607,7 @@ int init_game(struct game *game, char *state) {
 			game->board.board[r][c].type = PAWN;
 			game->board.board[r][c].moves = islower(state[i]) ?
 				(r == 1 ? 0:1) :
-				(c == 6 ? 0:1);
+				(r == 6 ? 0:1);
 			goto finish_special;
 		finish_generic:
 			game->board.board[r][c].moves = 1;

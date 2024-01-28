@@ -37,7 +37,6 @@ extern int run_perft(int level, char *start_pos) {
 	game = new_game();
 
 	if (start_pos != NULL) {
-		puts(start_pos);
 		if (init_game(game, start_pos)) {
 			fputs("Failed to initialize game\n", stderr);
 			return 1;
