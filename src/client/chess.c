@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <sys/param.h>
 
@@ -100,6 +101,8 @@ struct game *new_game() {
 		for (int j = 0; j < 8; ++j) {
 			ret->board.board[i][j].moves = 0;
 			ret->board.board[i][j].type = EMPTY;
+			/* TODO: Remove me */
+			ret->board.board[i][j].player = -1;
 		}
 	}
 
@@ -199,6 +202,8 @@ int make_move_no_checkmate(struct game *game, struct move *move) {
 	return error_code;
 }
 
+#include <stdio.h>
+
 static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle, enum player player) {
 	struct piece *piece, *dst;
 
@@ -211,7 +216,7 @@ static int is_illegal(struct game *game, struct move *move, struct piece **captu
 	PARSE_MOVE(game, move, piece, dst);
 
 	/* reject out of sequence moves */
-	if (piece->player != player) {
+	if (piece->type == EMPTY || piece->player != player) {
 		return ILLEGAL_MOVE;
 	}
 
@@ -235,6 +240,7 @@ static int is_illegal(struct game *game, struct move *move, struct piece **captu
 	case PAWN:
 		return pawn_is_illegal(game, move, captured, castle);
 	case EMPTY:
+		assert(false);
 		return ILLEGAL_MOVE;
 	}
 
@@ -394,6 +400,7 @@ static int king_is_illegal(struct game *game, struct move *move, struct piece **
 	return 0;
 }
 
+#include <stdio.h>
 static int pawn_is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle) {
 	struct piece *piece, *dst;
 	int direction;
@@ -401,6 +408,10 @@ static int pawn_is_illegal(struct game *game, struct move *move, struct piece **
 	UNUSED(castle);
 
 	PARSE_MOVE(game, move, piece, dst);
+
+	if (piece->player == WHITE) {
+		noop();
+	}
 
 	direction = piece->player == WHITE ? -1 : 1;
 

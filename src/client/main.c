@@ -22,12 +22,14 @@
 
 #include <legal.h>
 #include <client/sock.h>
+#include <client/perft.h>
 #include <client/runner.h>
 
 struct client_args {
 	char *dir;
 	char *user;
 	char *pass;
+	int perft;
 };
 
 static void parse_args(int argc, char *argv[], struct client_args *ret);
@@ -39,6 +41,11 @@ int main(int argc, char *argv[]) {
 	int sock_fd;
 
 	parse_args(argc, argv, &args);
+
+	if (args.perft != -1) {
+		return run_perft(args.perft);
+	}
+
 	snprintf(sock_path, sizeof sock_path, "%s/matchmaker", args.dir);
 	sock_path[sizeof sock_path - 1] = '\0';
 	if ((sock_fd = unix_connect(sock_path)) < 0) {
@@ -50,9 +57,10 @@ int main(int argc, char *argv[]) {
 
 static void parse_args(int argc, char *argv[], struct client_args *ret) {
 	ret->dir = ret->user = ret->pass = NULL;
+	ret->perft = -1;
 
 	for (;;) {
-		int opt = getopt(argc, argv, "hld:u:p:");
+		int opt = getopt(argc, argv, "hld:u:p:t:");
 		switch (opt) {
 		case -1:
 			goto got_args;
@@ -71,6 +79,9 @@ static void parse_args(int argc, char *argv[], struct client_args *ret) {
 		case 'p':
 			ret->pass = optarg;
 			break;
+		case 't':
+			ret->perft = atoi(optarg);
+			return;
 		default:
 			print_help(argv[0]);
 			exit(EXIT_FAILURE);
@@ -89,6 +100,7 @@ static void print_help(char *progname) {
 	printf("Usage: %s -d [dir] -u [username] -p [password]\n"
 	       "OTHER FLAGS:\n"
 	       "  -h: Show this help and quit\n"
-	       "  -l: Show a legal notice and quit\n",
+	       "  -l: Show a legal notice and quit\n"
+	       "  -t [level]: Run a perft test with [level] levels\n",
 	       progname);
 }

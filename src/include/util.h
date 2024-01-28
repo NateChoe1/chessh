@@ -13,4 +13,6 @@ static inline bool is_oob(int val, int min, int max) {
 	return !is_in_bounds(val, min, max);
 }
 
+extern void noop(void);
+
 #endif
