@@ -105,8 +105,6 @@ struct game *new_game() {
 		for (int j = 0; j < 8; ++j) {
 			ret->board.board[i][j].moves = 0;
 			ret->board.board[i][j].type = EMPTY;
-			/* TODO: Remove me */
-			ret->board.board[i][j].player = -1;
 		}
 	}
 
@@ -143,23 +141,6 @@ void free_game(struct game *game) {
 	free(game);
 }
 
-#include <stdio.h>
-/* TODO: Remove me */
-
-/* XXX:
- * It's 2 am so I'll make a note of what's happening:
- *   The perft test (a count of the possible game states from a given start)
- *   breaks on double checks
- *
- *   https://www.chessprogramming.org/Perft
- *
- *   I can't find a "fool's double check" like I can find a fool's mate, so I've
- *   been manually going through the Reti-Tartakower game from Wikipedia
- *
- *   https://en.wikipedia.org/wiki/Double_check
- *
- *   That's been taking quite a while, so I'll be working on an init_board
- *   function for a bit to make testing faster. */
 int make_move(struct game *game, struct move *move) {
 	int error_code;
 	enum player curr_player, other_player;
@@ -183,14 +164,6 @@ int make_move(struct game *game, struct move *move) {
 	}
 
 	if (!can_make_move(game, other_player)) {
-		/* TODO: Remove me */
-		struct move test_move;
-		test_move.r_i = 0;
-		test_move.c_i = 4;
-		test_move.r_f = 0;
-		test_move.c_f = 3;
-		test_move.promotion = QUEEN;
-		printf("%d\n", make_move_dryrun(game, &test_move));
 		if (is_in_check(game, other_player)) {
 			return curr_player == WHITE ?  WHITE_WIN : BLACK_WIN;
 		}
@@ -580,21 +553,9 @@ static bool can_make_move(struct game *game, enum player player) {
 }
 
 static bool piece_can_move(struct game *game, int row, int col) {
-	struct piece *src = &game->board.board[row][col];
-	if (row == 0 && col == 4) {
-		puts("TEST!!!!!!!");
-	}
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
 			struct move move;
-			struct piece *dst = &game->board.board[i][j];
-			printf("%d %d\n", i, j);
-			if (dst->type != EMPTY && src->player != dst->player) {
-				continue;
-			}
-			if (row == 0 && col == 4 && i == 0 && j == 3) {
-				puts("TEST 2!!!!!!!");
-			}
 			move.r_i = row;
 			move.c_i = col;
 			move.r_f = i;
@@ -612,7 +573,6 @@ enum player get_player(struct game *game) {
 	return game->duration % 2 == 0 ? WHITE : BLACK;
 }
 
-/* TODO: Finish this*/
 int init_game(struct game *game, char *state) {
 	int r, c, i, duration;
 	char ch;
