@@ -69,15 +69,19 @@ int run_client(int sock_fd) {
 
 	for (;;) {
 		char *charset;
-		charset = readline("Which piece symbols would you like? [unicode/ascii]: ");
+		//charset = readline("Which piece symbols would you like? [unicode/ascii]: ");
+		/* TODO: Change this back to readline at some point */
+		charset = "unicode";
 		if (charset == NULL) {
 			puts("Failed to read response, assuming ascii");
 			piecesyms = portsyms;
 			break;
 		}
+		/*
 		for (int i = 0; charset[i] != '\0'; ++i) {
 			charset[i] = tolower(charset[i]);
 		}
+		*/
 		if (strcmp(charset, "unicode") == 0) {
 			piecesyms = emojisyms;
 			break;

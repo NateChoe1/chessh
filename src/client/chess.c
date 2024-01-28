@@ -618,7 +618,7 @@ int init_game(struct game *game, char *state) {
 	char ch;
 
 	r = c = 0;
-	for (i = 0; r < 8 && c < 8; ++i) {
+	for (i = 0; state[i] != ' '; ++i) {
 		switch (tolower(state[i])) {
 		case '/':
 			if (c != 8) {
@@ -673,6 +673,9 @@ int init_game(struct game *game, char *state) {
 		}
 	}
 
+	if (r < 7 || c < 7) {
+		return -1;
+	}
 	if (state[i] != ' ') {
 		return -1;
 	}
@@ -688,7 +691,7 @@ int init_game(struct game *game, char *state) {
 		return -1;
 	}
 
-	if (state[++i] == ' ') {
+	if (state[++i] != ' ') {
 		return -1;
 	}
 
@@ -767,7 +770,7 @@ no_en_pessant:
 	game->board.board[r][c].last_move += game->duration;
 	game->last_big_move += duration;
 
-	if (state[i] == '\0') {
+	if (state[i] != '\0') {
 		return -1;
 	}
 
