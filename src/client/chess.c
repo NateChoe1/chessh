@@ -448,9 +448,14 @@ static int pawn_is_illegal(struct game *game, struct move *move, struct piece **
 		if (dst->type != EMPTY) {
 			goto promote_pawn;
 		}
+
+		/* en pessant */
+
 		if (pessant->type == PAWN &&
 		    pessant->player != piece->player &&
 		    pessant->moves == 1 &&
+		    ((piece->player == WHITE && move->r_i == 3) ||
+		     (piece->player == BLACK && move->r_i == 4)) &&
 		    pessant->last_move == game->duration) {
 			*captured = pessant;
 			goto promote_pawn;

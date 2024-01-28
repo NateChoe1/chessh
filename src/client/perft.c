@@ -82,12 +82,14 @@ static int run_sequence(struct game *game, char *sequence) {
 		for (j = 0; sequence[i+j] != ' ' && sequence[i+j] != '\0' && j < (ssize_t) sizeof buff-1; ++j) {
 			buff[j] = sequence[i+j];
 		}
-		sequence[j] = '\0';
+		buff[j] = '\0';
 		if (parse_move(game, buff) < 0) {
 			return 1;
 		}
 		i += j;
-		sequence[i] = '\0';
+		if (sequence[i] == '\0') {
+			break;
+		}
 	}
 	return 0;
 }
@@ -95,15 +97,16 @@ static int run_sequence(struct game *game, char *sequence) {
 static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
 		int r_pi, int c_pi, int r_pf, int c_pf) {
 	unsigned long long old_depth;
-	++results[curr_depth];
 
-	if (curr_depth >= max_depth-1) {
+	if (curr_depth >= max_depth) {
 		return;
 	}
 
 	if (curr_depth == 1) {
 		old_depth = results[max_depth - 1];
 	}
+
+	++results[curr_depth];
 
 	/* This code is intentionally very inefficient, it's designed to weed
 	 * out bugs in my engine, not to efficiently calculate perft values. I
