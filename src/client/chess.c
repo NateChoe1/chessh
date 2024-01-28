@@ -706,10 +706,10 @@ int init_game(struct game *game, char *state) {
 			} \
 			game->board.board[r][c].moves = 0; \
 			break
-		ROOK_CASTLE('K', 0, 7, BLACK);
-		ROOK_CASTLE('Q', 0, 0, BLACK);
-		ROOK_CASTLE('k', 7, 7, WHITE);
-		ROOK_CASTLE('q', 7, 0, WHITE);
+		ROOK_CASTLE('K', 7, 7, WHITE);
+		ROOK_CASTLE('Q', 7, 0, WHITE);
+		ROOK_CASTLE('k', 0, 7, BLACK);
+		ROOK_CASTLE('q', 0, 0, BLACK);
 #undef ROOK_CASTLE
 		case '-':
 			if (state[++i] != ' ') {

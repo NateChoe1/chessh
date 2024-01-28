@@ -96,8 +96,7 @@ int run_client(int sock_fd) {
 	game = new_game();
 
 	/* TODO: Remove me */
-	//if (init_game(game, "rnb1kb1r/pp3ppp/2p5/4q3/4n3/3Q4/PPPB1PPP/2KR1BNR w kq - 0 1") == -1) {
-	if (init_game(game, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") == -1) {
+	if (init_game(game, "rnb1kb1r/pp3ppp/2p5/4q3/4n3/3Q4/PPPB1PPP/2KR1BNR w kq - 0 1") == -1) {
 		puts("I suck at coding");
 		return 1;
 	}
