@@ -655,6 +655,7 @@ int init_game(struct game *game, char *state) {
 		finish_special:
 			game->board.board[r][c].player = islower(state[i]) ? BLACK : WHITE;
 			game->board.board[r][c].last_move = 0;
+			++c;
 			break;
 		digit:
 			for (int o = 0; o < state[i] - '0'; ++o) {
