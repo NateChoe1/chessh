@@ -29,7 +29,9 @@ struct client_args {
 	char *dir;
 	char *user;
 	char *pass;
+
 	int perft;
+	char *start_pos;
 };
 
 static void parse_args(int argc, char *argv[], struct client_args *ret);
@@ -43,7 +45,7 @@ int main(int argc, char *argv[]) {
 	parse_args(argc, argv, &args);
 
 	if (args.perft != -1) {
-		return run_perft(args.perft);
+		return run_perft(args.perft, args.start_pos);
 	}
 
 	snprintf(sock_path, sizeof sock_path, "%s/matchmaker", args.dir);
@@ -58,9 +60,10 @@ int main(int argc, char *argv[]) {
 static void parse_args(int argc, char *argv[], struct client_args *ret) {
 	ret->dir = ret->user = ret->pass = NULL;
 	ret->perft = -1;
+	ret->start_pos = NULL;
 
 	for (;;) {
-		int opt = getopt(argc, argv, "hld:u:p:t:");
+		int opt = getopt(argc, argv, "hld:u:p:t:i:");
 		switch (opt) {
 		case -1:
 			goto got_args;
@@ -81,13 +84,20 @@ static void parse_args(int argc, char *argv[], struct client_args *ret) {
 			break;
 		case 't':
 			ret->perft = atoi(optarg);
-			return;
+			break;
+		case 'i':
+			ret->start_pos = optarg;
+			break;
 		default:
 			print_help(argv[0]);
 			exit(EXIT_FAILURE);
 		}
 	}
 got_args:
+
+	if (ret->perft != -1) {
+		return;
+	}
 
 	if (ret->dir == NULL || ret->user == NULL || ret->pass == NULL) {
 		fprintf(stderr, "%s: missing required argument\n", argv[0]);
@@ -101,6 +111,7 @@ static void print_help(char *progname) {
 	       "OTHER FLAGS:\n"
 	       "  -h: Show this help and quit\n"
 	       "  -l: Show a legal notice and quit\n"
-	       "  -t [level]: Run a perft test with [level] levels\n",
+	       "  -t [level]: Run a perft test with [level] levels\n"
+	       "  -i [start]: Use [start] as the starting position for the perft test\n",
 	       progname);
 }

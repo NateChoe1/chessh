@@ -602,7 +602,7 @@ int init_game(struct game *game, char *state) {
 		case 'k':
 			game->board.board[r][c].type = KING;
 			game->board.board[r][c].moves = 0;
-			goto finish_generic;
+			goto finish_special;
 		case 'p':
 			game->board.board[r][c].type = PAWN;
 			game->board.board[r][c].moves = islower(state[i]) ?
@@ -708,7 +708,13 @@ got_castles:
 	}
 no_en_pessant:
 
-	if (state[++i] != ' ') {
+	switch (state[++i]) {
+	case ' ':
+		break;
+	case '\0':
+		game->last_big_move = duration = 0;
+		goto got_clock;
+	default:
 		return -1;
 	}
 
@@ -724,8 +730,9 @@ no_en_pessant:
 	if ((duration = parse_int(state, i, &i)-1) < 0) {
 		return -1;
 	}
-
 	duration *= 2;
+
+got_clock:
 	game->duration += duration;
 	game->board.board[r][c].last_move += game->duration;
 	game->last_big_move += duration;

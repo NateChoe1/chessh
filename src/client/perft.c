@@ -28,13 +28,21 @@ static void calculate_perft(struct game *game, int curr_depth, int max_depth, un
 static void add_node(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
 		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion);
 
-int run_perft(int level) {
+extern int run_perft(int level, char *start_pos) {
 	unsigned long long *results;
 	struct game *game;
 
 	results = alloca(level * sizeof *results);
 	memset(results, 0, level * sizeof *results);
 	game = new_game();
+
+	if (start_pos != NULL) {
+		puts(start_pos);
+		if (init_game(game, start_pos)) {
+			fputs("Failed to initialize game\n", stderr);
+			return 1;
+		}
+	}
 
 	if (game == NULL || results == NULL) {
 		fputs("Failed to initialize variables\n", stderr);
@@ -54,10 +62,6 @@ int run_perft(int level) {
 
 static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results) {
 	++results[curr_depth];
-
-	if (curr_depth == 1) {
-		fprintf(stderr, "progress: %lld/20\n", results[curr_depth]);
-	}
 
 	if (curr_depth >= max_depth-1) {
 		return;
