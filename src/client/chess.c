@@ -81,8 +81,6 @@ static inline int make_move_dryrun(struct game *game, struct move *move) {
 	return make_move_no_checkmate(&scratch, move);
 }
 
-enum player get_player(struct game *game);
-
 /* returns -1 on error */
 static int parse_int(char *s, int start, int *end);
 
@@ -173,7 +171,7 @@ int make_move(struct game *game, struct move *move) {
 	return error_code;
 }
 
-int make_move_no_checkmate(struct game *game, struct move *move) {
+static int make_move_no_checkmate(struct game *game, struct move *move) {
 	struct piece *captured;
 	struct move castle;
 	int error_code;
