@@ -28,7 +28,6 @@
 #include <client/chess.h>
 #include <client/runner.h>
 
-static int parse_cmd(struct game *game, char *move);
 static int parse_user_move(struct game *game, int peerfd);
 static int parse_op_move(struct game *game, int fd);
 static void print_letters(int player);
@@ -149,25 +148,6 @@ end:
 	return 0;
 }
 
-static int parse_cmd(struct game *game, char *move) {
-	struct move move_s;
-	if (strlen(move) < 4) {
-		return ILLEGAL_MOVE;
-	}
-	move_s.c_i = tolower(move[0]) - 'a';
-	move_s.r_i = 8 - (move[1] - '0');
-	move_s.c_f = tolower(move[2]) - 'a';
-	move_s.r_f = 8 - (move[3] - '0');
-	move_s.promotion = EMPTY;
-	switch (tolower(move[4])) {
-	case 'n': move_s.promotion = KNIGHT; break;
-	case 'q': move_s.promotion = QUEEN;  break;
-	case 'r': move_s.promotion = ROOK;   break;
-	case 'b': move_s.promotion = BISHOP; break;
-	}
-	return make_move(game, &move_s);
-}
-
 static int parse_user_move(struct game *game, int peerfd) {
 	char *move;
 	int code = 0;
@@ -175,7 +155,7 @@ static int parse_user_move(struct game *game, int peerfd) {
 	if (move == NULL) {
 		return IO_ERROR;
 	}
-	if ((code = parse_cmd(game, move))) {
+	if ((code = parse_move(game, move))) {
 		switch (code) {
 		case NONFATAL_ERROR:
 			return code;
@@ -199,7 +179,7 @@ static int parse_op_move(struct game *game, int fd) {
 	if (buff[read_len-1] != '\0') {
 		return IO_ERROR;
 	}
-	if ((code = parse_cmd(game, buff))) {
+	if ((code = parse_move(game, buff))) {
 		return code;
 	}
 	return 0;

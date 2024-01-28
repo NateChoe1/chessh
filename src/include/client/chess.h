@@ -94,4 +94,6 @@ extern int make_move(struct game *game, struct move *move);
  * */
 extern int init_game(struct game *game, char *state);
 
+int parse_move(struct game *game, char *move);
+
 #endif

@@ -18,6 +18,6 @@
 #ifndef HAVE_CLIENT__PERFT
 #define HAVE_CLIENT__PERFT
 
-extern int run_perft(int level, char *start_pos);
+extern int run_perft(int level, char *start_pos, char *start_sequence);
 
 #endif

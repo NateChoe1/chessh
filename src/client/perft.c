@@ -24,11 +24,14 @@
 #include <client/perft.h>
 #include <client/chess.h>
 
-static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results);
+static int run_sequence(struct game *game, char *sequence);
+static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
+		int r_pi, int c_pi, int r_pf, int c_pf);
 static void add_node(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
 		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion);
+static void print_move(int ri, int ci, int rf, int cf, unsigned long long diff);
 
-extern int run_perft(int level, char *start_pos) {
+int run_perft(int level, char *start_pos, char *start_sequence) {
 	unsigned long long *results;
 	struct game *game;
 
@@ -43,28 +46,65 @@ extern int run_perft(int level, char *start_pos) {
 		}
 	}
 
+	if (start_sequence != NULL) {
+		int code;
+		code = run_sequence(game, start_sequence);
+		if (code != 0) {
+			return code;
+		}
+	}
+
 	if (game == NULL || results == NULL) {
 		fputs("Failed to initialize variables\n", stderr);
 		return 1;
 	}
 
-	calculate_perft(game, 0, level, results);
+	calculate_perft(game, 0, level, results, 0, 0, 0, 0);
 
 	free_game(game);
 
+	/*
 	for (int i = 0; i < level; ++i) {
 		printf("%llu\n", results[i]);
 	}
+	*/
+
+	putchar('\n');
+	printf("%llu\n", results[level-1]);
 
 	return 0;
 }
 
-static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results) {
+static int run_sequence(struct game *game, char *sequence) {
+	for (int i = 0; sequence[i] != '\0'; ++i) {
+		char buff[10];
+		int j;
+		for (j = 0; sequence[i+j] != ' ' && sequence[i+j] != '\0' && j < (ssize_t) sizeof buff-1; ++j) {
+			buff[j] = sequence[i+j];
+		}
+		sequence[j] = '\0';
+		if (parse_move(game, buff) < 0) {
+			return 1;
+		}
+		i += j;
+		sequence[i] = '\0';
+	}
+	return 0;
+}
+
+static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
+		int r_pi, int c_pi, int r_pf, int c_pf) {
+	unsigned long long old_depth;
 	++results[curr_depth];
 
 	if (curr_depth >= max_depth-1) {
 		return;
 	}
+
+	if (curr_depth == 1) {
+		old_depth = results[max_depth - 1];
+	}
+
 	/* This code is intentionally very inefficient, it's designed to weed
 	 * out bugs in my engine, not to efficiently calculate perft values. I
 	 * could do a lot of pruning, but that would be testing the test
@@ -77,6 +117,15 @@ static void calculate_perft(struct game *game, int curr_depth, int max_depth, un
 				}
 			}
 		}
+	}
+
+	if (curr_depth == 1) {
+		unsigned long long diff;
+		diff = results[max_depth - 1] - old_depth;
+		if (diff == 0) {
+			return;
+		}
+		print_move(r_pi, c_pi, r_pf, c_pf, diff);
 	}
 }
 static void add_node(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
@@ -112,6 +161,10 @@ static void add_node(struct game *game, int curr_depth, int max_depth, unsigned 
 		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, QUEEN);
 		break;
 	default:
-		calculate_perft(&backup, curr_depth+1, max_depth, results);
+		calculate_perft(&backup, curr_depth+1, max_depth, results, r_i, c_i, r_f, c_f);
 	}
+}
+
+static void print_move(int ri, int ci, int rf, int cf, unsigned long long diff) {
+	printf("%c%d%c%d %llu\n", ci+'a', 8 - ri, cf+'a', 8 - rf, diff);
 }
