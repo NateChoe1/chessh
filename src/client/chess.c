@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -32,7 +31,8 @@
  * postcondition: *captured MAY be set to some extra casualty of this move, such
  *                as a pawn taken by en pessant (holy hell)
  * postcondition: *castle MAY be set to some move that also happens, probably
- *                due to castling. */
+ *                due to castling.
+ * XXX: This function does not account for checks */
 static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle, enum player player);
 
 /* precondition: game, move, captured, and castle are all valid pointers
@@ -68,6 +68,16 @@ static bool can_make_move(struct game *game, enum player player);
 
 /* checks if the piece at [row][col] can make a move */
 static bool piece_can_move(struct game *game, int row, int col);
+
+/* like make_move, but doesn't account for checkmate */
+static int make_move_no_checkmate(struct game *game, struct move *move);
+
+/* like is_illegal, but accounts for checks*/
+static inline int make_move_dryrun(struct game *game, struct move *move) {
+	struct game scratch;
+	memcpy(&scratch, game, sizeof scratch);
+	return make_move_no_checkmate(&scratch, move);
+}
 
 enum player get_player(struct game *game);
 
@@ -127,14 +137,45 @@ void free_game(struct game *game) {
 }
 
 int make_move(struct game *game, struct move *move) {
-	struct piece *captured;
-	struct move castle;
 	int error_code;
-	struct game backup;
 	enum player curr_player, other_player;
 
 	curr_player = get_player(game);
 	other_player = curr_player == WHITE ? BLACK : WHITE;
+
+	error_code = make_move_no_checkmate(game, move);
+
+	switch (error_code) {
+	case ILLEGAL_MOVE: case MISSING_PROMOTION:
+		return error_code;
+	}
+
+	if (game->duration - game->last_big_move >= 150) {
+		return FORCED_DRAW;
+	}
+
+	if (game->duration - game->last_big_move >= 100) {
+		return DRAW_OFFER;
+	}
+
+	if (!can_make_move(game, other_player)) {
+		if (is_in_check(game, other_player)) {
+			return curr_player == WHITE ?  WHITE_WIN : BLACK_WIN;
+		}
+		return FORCED_DRAW;
+	}
+
+	return error_code;
+}
+
+int make_move_no_checkmate(struct game *game, struct move *move) {
+	struct piece *captured;
+	struct move castle;
+	int error_code;
+	struct game backup;
+	enum player curr_player;
+
+	curr_player = get_player(game);
 
 	captured = NULL;
 	castle.r_i = castle.r_f = castle.c_i = castle.c_f = -1;
@@ -154,22 +195,6 @@ int make_move(struct game *game, struct move *move) {
 		memcpy(game, &backup, sizeof *game);
 		return ILLEGAL_MOVE;
 	}
-
-	if (game->duration - game->last_big_move >= 150) {
-		return FORCED_DRAW;
-	}
-
-	if (game->duration - game->last_big_move >= 100) {
-		return DRAW_OFFER;
-	}
-
-	if (!can_make_move(game, other_player)) {
-		if (is_in_check(game, other_player)) {
-			return curr_player == WHITE ?  WHITE_WIN : BLACK_WIN;
-		}
-		return FORCED_DRAW;
-	}
-
 
 	return error_code;
 }
@@ -518,22 +543,20 @@ static bool can_make_move(struct game *game, enum player player) {
 }
 
 static bool piece_can_move(struct game *game, int row, int col) {
-	struct piece *piece = &game->board.board[row][col];
+	struct piece *src = &game->board.board[row][col];
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
 			struct move move;
-			struct piece *captured;
-			struct move castle;
+			struct piece *dst = &game->board.board[i][j];
+			if (dst->type != EMPTY && src->player != dst->player) {
+				continue;
+			}
 			move.r_i = row;
 			move.c_i = col;
 			move.r_f = i;
 			move.c_f = j;
-			captured = NULL;
-			castle.r_i = castle.r_f = castle.c_i = castle.c_f = -1;
 			move.promotion = QUEEN;
-			if (is_illegal(game, &move, &captured, &castle, piece->player) >= 0) {
-				printf("%d %d %d %d\n", row, col, i, j);
-				printf("%d %d %d %d\n", move.r_i, move.c_i, move.r_f, move.c_f);
+			if (make_move_dryrun(game, &move) >= 0) {
 				return true;
 			}
 		}

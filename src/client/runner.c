@@ -95,10 +95,8 @@ int run_client(int sock_fd) {
 	for (int curr_player = 0;; curr_player = !curr_player) {
 		int move_code;
 		if (curr_player == pid) {
-			while ((move_code = parse_user_move(game, fds[1]))) {
-				if (move_code >= 0) {
-					break;
-				}
+			for (;;) {
+				move_code = parse_user_move(game, fds[1]);
 				switch (move_code) {
 				case ILLEGAL_MOVE:
 					puts("Illegal move!");
@@ -107,18 +105,37 @@ int run_client(int sock_fd) {
 					puts("Missing promotion!");
 					continue;
 				}
-				puts("Game over!");
-				goto end;
+				break;
 			}
 		}
 		else {
 			puts("Waiting on opponent's move");
-			while (parse_op_move(game, fds[0])) ;
+			move_code = parse_op_move(game, fds[0]);
+		}
+
+		switch (move_code) {
+		case WHITE_WIN:
+			puts("White wins!");
+			goto end;
+		case BLACK_WIN:
+			puts("Black wins!");
+			goto end;
+		case FORCED_DRAW:
+			puts("It's a draw!");
+			goto end;
+		case IO_ERROR:
+			puts("I/O error");
+			goto end;
+		}
+		if (move_code < 0) {
+			puts("An unknown error has occured, ending game");
+			goto end;
 		}
 
 		print_board(game, pid);
 	}
 end:
+	puts("Game over!");
 	return 0;
 }
 
@@ -143,33 +160,33 @@ static int parse_cmd(struct game *game, char *move) {
 
 static int parse_user_move(struct game *game, int peerfd) {
 	char *move;
-	int code;
+	int code = 0;
 	move = readline("Your move: ");
 	if (move == NULL) {
 		return IO_ERROR;
 	}
 	if ((code = parse_cmd(game, move))) {
-		return code;
+		switch (code) {
+		case ILLEGAL_MOVE: case MISSING_PROMOTION:
+			return code;
+		default:
+			break;
+		}
 	}
 	if (write(peerfd, move, 5) < 5) {
 		return IO_ERROR;
 	}
-	return 0;
+	return code;
 }
 
 static int parse_op_move(struct game *game, int fd) {
-	char buff[5];
-	size_t seen;
+	char buff[1024];
 	int code;
-	for (seen = 0; seen < sizeof buff;) {
-		ssize_t thisread;
-		thisread = read(fd, buff, sizeof buff - seen);
-		if (thisread < 0) {
-			return IO_ERROR;
-		}
-		seen += thisread;
+	ssize_t read_len;
+	if ((read_len = read(fd, buff, sizeof buff)) < 5) {
+		return IO_ERROR;
 	}
-	if (buff[sizeof buff - 1] != '\0') {
+	if (buff[read_len-1] != '\0') {
 		return IO_ERROR;
 	}
 	if ((code = parse_cmd(game, buff))) {
