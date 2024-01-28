@@ -83,6 +83,9 @@ static inline int make_move_dryrun(struct game *game, struct move *move) {
 
 enum player get_player(struct game *game);
 
+/* returns -1 on error */
+static int parse_int(char *s, int start, int *end);
+
 #define PARSE_MOVE(game, move, src, dst) \
 	do { \
 		src = &game->board.board[move->r_i][move->c_i]; \
@@ -611,7 +614,9 @@ enum player get_player(struct game *game) {
 
 /* TODO: Finish this*/
 int init_game(struct game *game, char *state) {
-	int r, c, i;
+	int r, c, i, duration;
+	char ch;
+
 	r = c = 0;
 	for (i = 0; r < 8 && c < 8; ++i) {
 		switch (tolower(state[i])) {
@@ -715,5 +720,69 @@ int init_game(struct game *game, char *state) {
 	}
 got_castles:
 
+	/* We're reusing variable names! [r, c] is now the location of the en
+	 * pessant pawn */
+	switch (ch = state[++i]) {
+	case '-':
+		r = c = -1;
+		goto no_en_pessant;
+	case 'a': c = 0; break;
+	case 'b': c = 1; break;
+	case 'c': c = 2; break;
+	case 'd': c = 3; break;
+	case 'e': c = 4; break;
+	case 'f': c = 5; break;
+	case 'g': c = 6; break;
+	case 'h': c = 7; break;
+	default:
+		  return -1;
+	}
+
+	switch (ch = state[++i]) {
+	case '2': r = 3; break;
+	case '5': r = 4; break;
+	}
+no_en_pessant:
+
+	if (state[++i] != ' ') {
+		return -1;
+	}
+
+	if ((game->last_big_move = parse_int(state, ++i, &i)) == -1) {
+		return -1;
+	}
+	game->last_big_move *= -1;
+
+	if (state[i++] != ' ') {
+		return -1;
+	}
+
+	if ((duration = parse_int(state, i, &i)-1) < 0) {
+		return -1;
+	}
+
+	duration *= 2;
+	game->duration += duration;
+	game->board.board[r][c].last_move += game->duration;
+	game->last_big_move += duration;
+
+	if (state[i] == '\0') {
+		return -1;
+	}
+
 	return 0;
+}
+
+static int parse_int(char *s, int start, int *end) {
+	int i, ret;
+	ret = 0;
+	if (!isdigit(s[start])) {
+		return -1;
+	}
+	for (i = start; isdigit(s[i]); ++i) {
+		ret *= 10;
+		ret += s[i] - '0';
+	}
+	*end = i;
+	return ret;
 }
