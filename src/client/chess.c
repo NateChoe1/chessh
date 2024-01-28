@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -201,8 +202,6 @@ int make_move_no_checkmate(struct game *game, struct move *move) {
 
 	return error_code;
 }
-
-#include <stdio.h>
 
 static int is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle, enum player player) {
 	struct piece *piece, *dst;
@@ -400,7 +399,6 @@ static int king_is_illegal(struct game *game, struct move *move, struct piece **
 	return 0;
 }
 
-#include <stdio.h>
 static int pawn_is_illegal(struct game *game, struct move *move, struct piece **captured, struct move *castle) {
 	struct piece *piece, *dst;
 	int direction;
@@ -577,4 +575,112 @@ static bool piece_can_move(struct game *game, int row, int col) {
 
 enum player get_player(struct game *game) {
 	return game->duration % 2 == 0 ? WHITE : BLACK;
+}
+
+int init_game(struct game *game, char *state) {
+	int r, c, i;
+	r = c = 0;
+	for (i = 0; r < 8 && c < 8; ++i) {
+		switch (tolower(state[i])) {
+		case '/':
+			if (c != 8) {
+				return -1;
+			}
+			++r;
+			c = 0;
+			continue;
+		case 'r':
+			game->board.board[r][c].type = ROOK;
+			goto finish_generic;
+		case 'n':
+			game->board.board[r][c].type = KNIGHT;
+			goto finish_generic;
+		case 'b':
+			game->board.board[r][c].type = BISHOP;
+			goto finish_generic;
+		case 'q':
+			game->board.board[r][c].type = QUEEN;
+			goto finish_generic;
+		case 'k':
+			game->board.board[r][c].type = KING;
+			game->board.board[r][c].moves = 0;
+			goto finish_generic;
+		case 'p':
+			game->board.board[r][c].type = PAWN;
+			game->board.board[r][c].moves = islower(state[i]) ?
+				(r == 1 ? 0:1) :
+				(c == 6 ? 0:1);
+			goto finish_special;
+		finish_generic:
+			game->board.board[r][c].moves = 1;
+			/* fallthrough */
+		finish_special:
+			game->board.board[r][c].player = islower(state[i]) ? BLACK : WHITE;
+			game->board.board[r][c].last_move = 0;
+			break;
+		digit:
+			for (int o = 0; o < state[i] - '0'; ++o) {
+				if (c >= 8) {
+					return -1;
+				}
+				game->board.board[r][c++].type = EMPTY;
+			}
+			break;
+		default:
+			if (isdigit(state[i])) {
+				goto digit;
+			}
+			return -1;
+		}
+	}
+
+	if (state[i] != ' ') {
+		return -1;
+	}
+
+	switch (state[++i]) {
+	case 'w':
+		game->duration = 0;
+		break;
+	case 'b':
+		game->duration = 1;
+		break;
+	default:
+		return -1;
+	}
+
+	if (state[++i] == ' ') {
+		return -1;
+	}
+
+	for (;;) {
+		char c = state[++i];
+		switch (c) {
+#define ROOK_CASTLE(ch, r, c, p) \
+		case ch: \
+			if (game->board.board[r][c].type != ROOK || \
+			    game->board.board[r][c].player != p) { \
+				return -1; \
+			} \
+			game->board.board[r][c].moves = 0; \
+			break
+		ROOK_CASTLE('K', 0, 7, BLACK);
+		ROOK_CASTLE('Q', 0, 0, BLACK);
+		ROOK_CASTLE('k', 7, 7, WHITE);
+		ROOK_CASTLE('q', 7, 0, WHITE);
+#undef ROOK_CASTLE
+		case '-':
+			if (state[++i] != ' ') {
+				return -1;
+			}
+			/* fallthrough */
+		case ' ':
+			goto got_castles;
+		default:
+			return -1;
+		}
+	}
+got_castles:
+
+	return 0;
 }

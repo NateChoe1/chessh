@@ -88,4 +88,10 @@ extern void free_game(struct game *game);
 /* returns >=0 on success */
 extern int make_move(struct game *game, struct move *move);
 
+/* 0 on success, -1 on failure, uses Forsyth-Edwards Notation
+ *
+ * https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+ * */
+extern int init_game(struct game *game, char *state);
+
 #endif
