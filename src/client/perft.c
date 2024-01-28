@@ -26,12 +26,12 @@
 
 static int run_sequence(struct game *game, char *sequence);
 static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
-		int r_pi, int c_pi, int r_pf, int c_pf);
+		int r_pi, int c_pi, int r_pf, int c_pf, bool autotest);
 static void add_node(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
-		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion);
+		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion, bool autotest);
 static void print_move(int ri, int ci, int rf, int cf, unsigned long long diff);
 
-int run_perft(int level, char *start_pos, char *start_sequence) {
+int run_perft(int level, char *start_pos, char *start_sequence, bool autotest) {
 	unsigned long long *results;
 	struct game *game;
 
@@ -59,18 +59,19 @@ int run_perft(int level, char *start_pos, char *start_sequence) {
 		return 1;
 	}
 
-	calculate_perft(game, 0, level, results, 0, 0, 0, 0);
+	calculate_perft(game, 0, level, results, 0, 0, 0, 0, autotest);
 
 	free_game(game);
 
-	/*
-	for (int i = 0; i < level; ++i) {
-		printf("%llu\n", results[i]);
+	if (!autotest) {
+		for (int i = 0; i < level; ++i) {
+			printf("%llu\n", results[i]);
+		}
 	}
-	*/
-
-	putchar('\n');
-	printf("%llu\n", results[level-1]);
+	else {
+		putchar('\n');
+		printf("%llu\n", results[level-1]);
+	}
 
 	return 0;
 }
@@ -95,14 +96,14 @@ static int run_sequence(struct game *game, char *sequence) {
 }
 
 static void calculate_perft(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
-		int r_pi, int c_pi, int r_pf, int c_pf) {
+		int r_pi, int c_pi, int r_pf, int c_pf, bool autotest) {
 	unsigned long long old_depth;
 
 	if (curr_depth >= max_depth) {
 		return;
 	}
 
-	if (curr_depth == 1) {
+	if (autotest && curr_depth == 1) {
 		old_depth = results[max_depth - 1];
 	}
 
@@ -116,13 +117,13 @@ static void calculate_perft(struct game *game, int curr_depth, int max_depth, un
 		for (int c_i = 0; c_i < 8; c_i++) {
 			for (int r_f = 0; r_f < 8; ++r_f) {
 				for (int c_f = 0; c_f < 8; ++c_f) {
-					add_node(game, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, EMPTY);
+					add_node(game, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, EMPTY, autotest);
 				}
 			}
 		}
 	}
 
-	if (curr_depth == 1) {
+	if (autotest && curr_depth == 1) {
 		unsigned long long diff;
 		diff = results[max_depth - 1] - old_depth;
 		if (diff == 0) {
@@ -132,7 +133,7 @@ static void calculate_perft(struct game *game, int curr_depth, int max_depth, un
 	}
 }
 static void add_node(struct game *game, int curr_depth, int max_depth, unsigned long long *results,
-		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion) {
+		int r_i, int c_i, int r_f, int c_f, enum piece_type promotion, bool autotest) {
 	struct move move;
 	struct game backup;
 	int code;
@@ -158,13 +159,13 @@ static void add_node(struct game *game, int curr_depth, int max_depth, unsigned 
 			fputs("ENGINE ERROR!!! make_move() returned MISSING_PROMOTION on non-empty promotion type\n", stderr);
 			exit(EXIT_FAILURE);
 		}
-		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, ROOK);
-		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, KNIGHT);
-		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, BISHOP);
-		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, QUEEN);
+		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, ROOK, autotest);
+		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, KNIGHT, autotest);
+		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, BISHOP, autotest);
+		add_node(&backup, curr_depth, max_depth, results, r_i, c_i, r_f, c_f, QUEEN, autotest);
 		break;
 	default:
-		calculate_perft(&backup, curr_depth+1, max_depth, results, r_i, c_i, r_f, c_f);
+		calculate_perft(&backup, curr_depth+1, max_depth, results, r_i, c_i, r_f, c_f, autotest);
 	}
 }
 

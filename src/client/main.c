@@ -33,6 +33,7 @@ struct client_args {
 	int perft;
 	char *start_pos;
 	char *start_sequence;
+	bool autotest;
 };
 
 static void parse_args(int argc, char *argv[], struct client_args *ret);
@@ -46,7 +47,7 @@ int main(int argc, char *argv[]) {
 	parse_args(argc, argv, &args);
 
 	if (args.perft != -1) {
-		return run_perft(args.perft, args.start_pos, args.start_sequence);
+		return run_perft(args.perft, args.start_pos, args.start_sequence, args.autotest);
 	}
 
 	snprintf(sock_path, sizeof sock_path, "%s/matchmaker", args.dir);
@@ -62,9 +63,10 @@ static void parse_args(int argc, char *argv[], struct client_args *ret) {
 	ret->dir = ret->user = ret->pass = NULL;
 	ret->perft = -1;
 	ret->start_pos = ret->start_sequence = NULL;
+	ret->autotest = false;
 
 	for (;;) {
-		int opt = getopt(argc, argv, "hld:u:p:t:i:s:");
+		int opt = getopt(argc, argv, "hld:u:p:t:i:s:a");
 		switch (opt) {
 		case -1:
 			goto got_args;
@@ -92,6 +94,9 @@ static void parse_args(int argc, char *argv[], struct client_args *ret) {
 		case 's':
 			ret->start_sequence = optarg;
 			break;
+		case 'a':
+			ret->autotest = true;
+			break;
 		default:
 			print_help(argv[0]);
 			exit(EXIT_FAILURE);
@@ -117,6 +122,7 @@ static void print_help(char *progname) {
 	       "  -l: Show a legal notice and quit\n"
 	       "  -t [level]: Run a perft test with [level] levels\n"
 	       "  -i [start]: Use [start] as the starting position for the perft test\n"
-	       "  -s [sequence]: Run [sequence] before beginning the perft test\n",
+	       "  -s [sequence]: Run [sequence] before beginning the perft test\n"
+	       "  -a: Produce a test output suitable for automatic testing with perftree\n",
 	       progname);
 }
