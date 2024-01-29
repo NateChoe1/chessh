@@ -102,7 +102,16 @@ int run_client(int sock_fd) {
 
 	frontend = NULL;
 	if (ask_user("Can you use ncurses? (If you don't know what this means, say 'y')", true)) {
-		frontend = new_curses_frontend(piecesyms_white, piecesyms_black);
+		/* the transparent "white" unicode chars for chess pieces don't
+		 * look right on colored backgrounds. Instead, it's easier to
+		 * just use filled in "black" chars and change the foreground
+		 * color. */
+		if (piecesyms_white == emojisyms_white || piecesyms_white == emojisyms_black) {
+			frontend = new_curses_frontend(emojisyms_white, emojisyms_white);
+		}
+		else {
+			frontend = new_curses_frontend(piecesyms_white, piecesyms_black);
+		}
 	}
 	else {
 		frontend = new_text_frontend(piecesyms_white, piecesyms_black);
