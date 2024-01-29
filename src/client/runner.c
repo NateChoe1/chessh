@@ -170,18 +170,22 @@ static bool ask_user(char *prompt, bool def_answer) {
 		if (response == NULL) {
 			printf("Failed to read response, assuming '%s'",
 					def_answer ? "yes":"no");
+			free(response);
 			return def_answer;
 		}
 		for (int i = 0; response[i] != '\0'; ++i) {
 			response[i] = tolower(response[i]);
 		}
 		if (strcmp(response, "y") == 0 || strcmp(response, "yes") == 0 || response[0] == '\0') {
+			free(response);
 			return true;
 		}
 		if (strcmp(response, "n") == 0 || strcmp(response, "no") == 0) {
+			free(response);
 			return false;
 		}
 		puts("Please answer either 'y' or 'n'");
+		free(response);
 	}
 }
 
@@ -214,15 +218,19 @@ static int get_player_move(struct frontend *frontend, struct game *game, int pee
 		switch (move_code) {
 		case ILLEGAL_MOVE:
 			frontend->report_msg(frontend->aux, "Illegal move!");
+			free(move);
 			continue;
 		case MISSING_PROMOTION:
 			frontend->report_error(frontend->aux, MISSING_PROMOTION);
+			free(move);
 			continue;
 		}
 		break;
 	}
 	if (write(peer, move, strlen(move)+1) < 5) {
+		free(move);
 		return IO_ERROR;
 	}
+	free(move);
 	return move_code;
 }

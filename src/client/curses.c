@@ -19,6 +19,10 @@
 
 #include <client/frontend.h>
 
+struct aux {
+	int nonce;
+};
+
 /* TODO: Implement this */
 extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
 	(void) piecesyms_white;
