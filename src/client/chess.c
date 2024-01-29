@@ -90,7 +90,7 @@ static int parse_int(char *s, int start, int *end);
 		dst = &game->board.board[move->r_f][move->c_f]; \
 	} while (0)
 
-struct game *new_game() {
+struct game *new_game(void) {
 	struct game *ret;
 	if ((ret = malloc(sizeof *ret)) == NULL) {
 		return NULL;

@@ -27,14 +27,17 @@
 #include <copyfd.h>
 #include <client/chess.h>
 #include <client/runner.h>
+#include <client/frontend.h>
 
-static int parse_user_move(struct game *game, int peerfd);
+static bool ask_user(char *prompt, bool def_answer);
 static int parse_op_move(struct game *game, int fd);
-static void print_letters(int player);
-static void print_board(struct game *game, int player);
+static int get_player_move(struct frontend *frontend, struct game *game, int peer);
 
-static char **piecesyms;
-static char *emojisyms[] = {
+static char **piecesyms_white;
+static char **piecesyms_black;
+
+/* I know these technically aren't emoji, but I don't care. */
+static char *emojisyms_white[] = {
 	[ROOK]   = "♜ ",
 	[KNIGHT] = "♞ ",
 	[BISHOP] = "♝ ",
@@ -43,7 +46,16 @@ static char *emojisyms[] = {
 	[PAWN]   = "♟︎ ",
 	[EMPTY]  = "  ",
 };
-static char *portsyms[] = {
+static char *emojisyms_black[] = {
+	[ROOK]   = "♖ ",
+	[KNIGHT] = "♘ ",
+	[BISHOP] = "♗ ",
+	[QUEEN]  = "♕ ",
+	[KING]   = "♔ ",
+	[PAWN]   = "♙ ",
+	[EMPTY]  = "  ",
+};
+static char *portsyms_white[] = {
 	[ROOK]   = "R ",
 	[KNIGHT] = "N ",
 	[BISHOP] = "B ",
@@ -52,123 +64,125 @@ static char *portsyms[] = {
 	[PAWN]   = "P ",
 	[EMPTY]  = "  ",
 };
+static char *portsyms_black[] = {
+	[ROOK]   = "r ",
+	[KNIGHT] = "n ",
+	[BISHOP] = "b ",
+	[QUEEN]  = "q ",
+	[KING]   = "k ",
+	[PAWN]   = "p ",
+	[EMPTY]  = "  ",
+};
 
 int run_client(int sock_fd) {
 	int fds[2];
 	int pid;
+	enum player player;
 	int recvlen;
 	ssize_t pidlen;
 	struct game *game;
+	struct frontend *frontend;
+	char *end_msg;
 
-	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds,
-					&pid, sizeof pid, &pidlen)) < 2 ||
-	    pidlen < (ssize_t) sizeof pid) {
+	puts("Believe it or not, plaintext isn't actually that portable. I have to ask some questions:");
+	if (ask_user("Do you see a pawn symbol? ♟︎ ", true)) {
+		piecesyms_white = emojisyms_white;
+		piecesyms_black = emojisyms_black;
+		/* This varies based on your terminal's background color */
+		if (!ask_user("Does that pawn symbol look white?", true)) {
+			char **backup = piecesyms_white;
+			piecesyms_white = piecesyms_black;
+			piecesyms_black = backup;
+		}
+	}
+	else {
+		piecesyms_white = portsyms_white;
+		piecesyms_black = portsyms_black;
+	}
+
+	frontend = NULL;
+	if (ask_user("Can you use ncurses? (If you don't know what this means, say 'y')", true)) {
+		frontend = new_curses_frontend(piecesyms);
+	}
+	else {
+		frontend = new_text_frontend(piecesyms);
+	}
+	if (frontend == NULL) {
+		puts("Failed to initialize frontend, quitting");
 		return 1;
 	}
 
-	for (;;) {
-		char *charset;
-		//charset = readline("Which piece symbols would you like? [unicode/ascii]: ");
-		/* TODO: Change this back to readline at some point */
-		charset = "unicode";
-		if (charset == NULL) {
-			puts("Failed to read response, assuming ascii");
-			piecesyms = portsyms;
-			break;
-		}
-		/*
-		for (int i = 0; charset[i] != '\0'; ++i) {
-			charset[i] = tolower(charset[i]);
-		}
-		*/
-		if (strcmp(charset, "unicode") == 0) {
-			piecesyms = emojisyms;
-			break;
-		}
-		if (strcmp(charset, "ascii") == 0) {
-			piecesyms = portsyms;
-			break;
-		}
-		puts("Invalid response");
+	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds, &pid, sizeof pid, &pidlen)) < 2 ||
+	    pidlen < (ssize_t) sizeof pid) {
+		return 1;
 	}
+	player = pid == 0 ? WHITE : BLACK;
 
 	game = new_game();
 
-	/* TODO: Remove me */
-	if (init_game(game, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -")) {
-	//if (init_game(game, "r3k3/p1ppPpbr/bN2pnp1/4N3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQq -")) {
-		puts("INVALID GAME!!!");
-		exit(EXIT_FAILURE);
-	}
-
-	print_board(game, pid);
+	frontend->display_board(frontend->aux, game, player);
 	for (;;) {
 		int move_code;
 		int curr_player = get_player(game) == WHITE ? 0:1;
 		if (curr_player == pid) {
-			for (;;) {
-				move_code = parse_user_move(game, fds[1]);
-				switch (move_code) {
-				case ILLEGAL_MOVE:
-					puts("Illegal move!");
-					continue;
-				case MISSING_PROMOTION:
-					puts("Missing promotion!");
-					continue;
-				}
-				break;
-			}
+			move_code = get_player_move(frontend, game, fds[1]);
 		}
 		else {
-			puts("Waiting on opponent's move");
+			frontend->report_msg(frontend->aux, "Waiting on opponent's move");
 			move_code = parse_op_move(game, fds[0]);
 		}
 
 		switch (move_code) {
 		case WHITE_WIN:
-			puts("White wins!");
+			end_msg = "White wins!";
 			goto end;
 		case BLACK_WIN:
-			puts("Black wins!");
+			end_msg = "Black wins!";
 			goto end;
 		case FORCED_DRAW:
-			puts("It's a draw!");
+			end_msg = "It's a draw!";
 			goto end;
 		case IO_ERROR:
-			puts("I/O error");
+			end_msg = "I/O error";
 			goto end;
 		}
 		if (move_code < 0) {
-			puts("An unknown error has occured, ending game");
+			end_msg = "An unknown error has occured, ending game";
 			goto end;
 		}
 
-		print_board(game, pid);
+		frontend->display_board(frontend->aux, game, player);
 	}
 end:
-	puts("Game over!");
+	frontend->report_msg(frontend->aux, end_msg);
+	sleep(3);
+	frontend->free(frontend);
 	return 0;
 }
 
-static int parse_user_move(struct game *game, int peerfd) {
-	char *move;
-	int code = 0;
-	move = readline("Your move: ");
-	if (move == NULL) {
-		return IO_ERROR;
-	}
-	if ((code = parse_move(game, move))) {
-		switch (code) {
-		case NONFATAL_ERROR:
-			return code;
-		default:
-			break;
+static bool ask_user(char *prompt, bool def_answer) {
+	char readline_prompt[256];
+	snprintf(readline_prompt, sizeof readline_prompt, "%s %s",
+			prompt, def_answer ? "[Y/n]: " : "[y/N]: ");
+	for (;;) {
+		char *response;
+		response = readline(readline_prompt);
+		if (response == NULL) {
+			printf("Failed to read response, assuming '%s'",
+					def_answer ? "yes":"no");
+			return def_answer;
 		}
+		for (int i = 0; response[i] != '\0'; ++i) {
+			response[i] = tolower(response[i]);
+		}
+		if (strcmp(response, "y") == 0 || strcmp(response, "yes") == 0 || response[0] == '\0') {
+			return true;
+		}
+		if (strcmp(response, "n") == 0 || strcmp(response, "no") == 0) {
+			return false;
+		}
+		puts("Please answer either 'y' or 'n'");
 	}
-	if (write(peerfd, move, 5) < 5) {
-		return IO_ERROR;
-	}
-	return code;
 }
 
 static int parse_op_move(struct game *game, int fd) {
@@ -187,30 +201,28 @@ static int parse_op_move(struct game *game, int fd) {
 	return 0;
 }
 
-static void print_letters(int player) {
-	if (player == 0) {
-		puts("  a b c d e f g h");
-	}
-	else {
-		puts("  h g f e d c b a");
-	}
-}
-
-static void print_board(struct game *game, int player) {
-	print_letters(player);
-	for (int i = 0; i < 8; ++i) {
-		int row = player == 0 ? i : 7-i;
-		printf("%d ", 8 - row);
-		for (int j = 0; j < 8; ++j) {
-			int col = player == 0 ? j : 7-j;
-			struct piece *piece = &game->board.board[row][col];
-			char *sym = piecesyms[piece->type];
-
-			fputs((row+col)%2==0 ? "\33[45":"\33[44", stdout);
-			fputs(piece->player==0 ? ";37m":";30m", stdout);
-			fputs(sym, stdout);
+static int get_player_move(struct frontend *frontend, struct game *game, int peer) {
+	char *move;
+	int move_code;
+	frontend->report_msg(frontend->aux, "Make your move");
+	for (;;) {
+		move = frontend->get_move(frontend->aux);
+		if (move == NULL) {
+			return IO_ERROR;
 		}
-		printf("\33[0m %d\n", 8 - row);
+		move_code = parse_move(game, move);
+		switch (move_code) {
+		case ILLEGAL_MOVE:
+			frontend->report_msg(frontend->aux, "Illegal move!");
+			continue;
+		case MISSING_PROMOTION:
+			frontend->report_error(frontend->aux, MISSING_PROMOTION);
+			continue;
+		}
+		break;
 	}
-	print_letters(player);
+	if (write(peer, move, strlen(move)+1) < 5) {
+		return IO_ERROR;
+	}
+	return move_code;
 }

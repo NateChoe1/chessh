@@ -11,7 +11,7 @@ HEADERS_CLIENT = $(wildcard src/include/client/*.h)
 
 LIBS_SHARED =
 LIBS_DAEMON =
-LIBS_CLIENT = readline
+LIBS_CLIENT = readline ncursesw
 
 LDFLAGS_SHARED =
 LDFLAGS_DAEMON =

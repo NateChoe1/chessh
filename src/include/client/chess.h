@@ -72,7 +72,7 @@ struct move {
 	enum piece_type promotion;
 };
 
-extern struct game *new_game();
+extern struct game *new_game(void);
 extern void free_game(struct game *game);
 
 #define ILLEGAL_MOVE -1
