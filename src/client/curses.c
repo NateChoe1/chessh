@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -31,6 +32,7 @@ struct aux {
 	bool has_color;
 	/* always foreground, background. wb has a white foreground and a black
 	 * background. keep in mind these aren't literally #000 and #fff. */
+	char *msg;
 };
 
 /* WB = white foreground, black background */
@@ -39,10 +41,16 @@ struct aux {
 #define BW 3
 #define BB 4
 
-static void draw_piece(void *aux, struct game *game, int row, int col);
+#define CREDIT "created by nate choe <nate@natechoe.dev>"
+
+static char *get_move(void *aux);
+static void report_error(void *aux, int code);
+static void report_msg(void *aux, char *msg);
+static void draw_piece(struct aux *aux, struct game *game, int row, int col);
 static void display_board(void *aux, struct game *game, enum player player);
 static void free_frontend(struct frontend *this);
 static void reset_move(struct move *move);
+static void drawmsg(char *msg);
 
 /* TODO: Implement this */
 extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
@@ -60,6 +68,9 @@ extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piece
 	cbreak();
 	noecho();
 
+	ret->get_move = get_move;
+	ret->report_msg = report_msg;
+	ret->report_error = report_error;
 	ret->display_board = display_board;
 	ret->free = free_frontend;
 	ret->aux = aux;
@@ -80,11 +91,49 @@ extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piece
 	return ret;
 }
 
-static void draw_piece(void *aux, struct game *game, int row, int col) {
+/* TODO: Finish me */
+static char *get_move(void *aux) {
+	struct aux *aux_decomposed = (struct aux *) aux;
+	if (aux_decomposed->move.promotion != EMPTY) {
+		goto end;
+	}
+
+end:
+	aux_decomposed->move.promotion = EMPTY;
+	return NULL;
+}
+
+static void report_error(void *aux, int code) {
+	struct aux *aux_decomposed = (struct aux *) aux;
+	switch (code) {
+	case MISSING_PROMOTION:
+		drawmsg("What would you like to promote to? [qrnb]");
+		for (;;) {
+			switch (tolower(getch())) {
+			case 'q': aux_decomposed->move.promotion = QUEEN; break;
+			case 'r': aux_decomposed->move.promotion = ROOK; break;
+			case 'n': aux_decomposed->move.promotion = KNIGHT; break;
+			case 'b': aux_decomposed->move.promotion = BISHOP; break;
+			default: drawmsg("Invalid promotion [qrnb]"); continue;
+			}
+			break;
+		}
+		break;
+	default:
+		drawmsg("Warning: Unknown warning received from backend");
+	}
+}
+
+static void report_msg(void *aux, char *msg) {
+	struct aux *aux_decomposed = (struct aux *) aux;
+	drawmsg(msg);
+	aux_decomposed->msg = msg;
+}
+
+static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
 	struct piece *piece = &game->board.board[row][col];
 	int white_foreground, white_background;
 	int pair;
-	struct aux *aux_decomposed = (struct aux *) aux;
 	white_background = (row+col)%2 == 0;
 	white_foreground = piece->type == EMPTY || piece->player == WHITE;
 
@@ -99,17 +148,17 @@ static void draw_piece(void *aux, struct game *game, int row, int col) {
 	attron(COLOR_PAIR(pair));
 
 	if (piece->type == EMPTY || piece->player == WHITE) {
-		addstr(aux_decomposed->piecesyms_white[piece->type]);
+		addstr(aux->piecesyms_white[piece->type]);
 	}
 	else {
-		addstr(aux_decomposed->piecesyms_black[piece->type]);
+		addstr(aux->piecesyms_black[piece->type]);
 	}
 
 	attroff(COLOR_PAIR(pair));
 }
 
 static void display_board(void *aux, struct game *game, enum player player) {
-	UNUSED(aux);
+	struct aux *aux_decomposed = (struct aux *) aux;
 
 	erase();
 
@@ -120,13 +169,12 @@ static void display_board(void *aux, struct game *game, enum player player) {
 		move(i+1, 2);
 		for (int j = 0; j < 8; ++j) {
 			int col = player == WHITE ? j : 7-j;
-			draw_piece(aux, game, row, col);
+			draw_piece(aux_decomposed, game, row, col);
 		}
 	}
+	drawmsg(aux_decomposed->msg);
+	mvaddstr(LINES-1, 0, CREDIT);
 	refresh();
-
-	UNUSED(game);
-	UNUSED(player);
 }
 
 static void free_frontend(struct frontend *this) {
@@ -138,4 +186,10 @@ static void free_frontend(struct frontend *this) {
 static void reset_move(struct move *move) {
 	move->r_i = move->c_i = move->r_f = move->c_f = -1;
 	move->promotion = EMPTY;
+}
+
+static void drawmsg(char *msg) {
+	move(LINES-2, 0);
+	clrtoeol();
+	addstr(msg);
 }
