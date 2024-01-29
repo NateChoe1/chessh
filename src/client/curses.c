@@ -43,7 +43,8 @@ struct aux {
 
 #define CREDIT "created by nate choe <nate@natechoe.dev>"
 
-static char *get_move(void *aux);
+static char *get_move(void *aux, enum player player);
+static void select_square(int *r_ret, int *c_ret, enum player player);
 static void report_error(void *aux, int code);
 static void report_msg(void *aux, char *msg);
 static void draw_piece(struct aux *aux, struct game *game, int row, int col);
@@ -52,8 +53,7 @@ static void free_frontend(struct frontend *this);
 static void reset_move(struct move *move);
 static void drawmsg(char *msg);
 
-/* TODO: Implement this */
-extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
+struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
 	struct frontend *ret;
 	struct aux *aux;
 
@@ -67,6 +67,8 @@ extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piece
 	initscr();
 	cbreak();
 	noecho();
+	curs_set(0);
+	keypad(curscr, TRUE);
 
 	ret->get_move = get_move;
 	ret->report_msg = report_msg;
@@ -91,16 +93,50 @@ extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piece
 	return ret;
 }
 
-/* TODO: Finish me */
-static char *get_move(void *aux) {
+static char *get_move(void *aux, enum player player) {
 	struct aux *aux_decomposed = (struct aux *) aux;
-	if (aux_decomposed->move.promotion != EMPTY) {
+	struct move *move;
+	move = &aux_decomposed->move;
+	if (move->promotion != EMPTY) {
 		goto end;
 	}
 
+	drawmsg("Select the start location for your move");
+	select_square(&move->r_i, &move->c_i, player);
+	drawmsg("Select the end location for your move");
+	select_square(&move->r_f, &move->c_f, player);
+
 end:
+	/* Reset the promotion for the next move */
 	aux_decomposed->move.promotion = EMPTY;
-	return NULL;
+	return move_to_string(move);
+}
+
+static void select_square(int *r_ret, int *c_ret, enum player player) {
+	int r, c;
+	r = c = 0;
+	curs_set(1);
+	for (;;) {
+		int ch;
+		switch (ch = getch()) {
+		case 'h': c -= 1; break;
+		case 'j': r += 1; break;
+		case 'k': r -= 1; break;
+		case 'l': c += 1; break;
+		case KEY_LEFT: c -= 1 ; break;
+		case KEY_UP: r -= 1 ; break;
+		case KEY_RIGHT: c += 1 ; break;
+		case KEY_DOWN: r += 1 ; break;
+		case ' ': case KEY_ENTER: case '\r': case '\n':
+			*r_ret = player == WHITE ? r : 7-r;
+			*c_ret = player == WHITE ? c : 7-c;
+			curs_set(0);
+			return;
+		}
+		r = (r+8) % 8;
+		c = (c+8) % 8;
+		move(r+1, c*2+2);
+	}
 }
 
 static void report_error(void *aux, int code) {
@@ -124,10 +160,14 @@ static void report_error(void *aux, int code) {
 	}
 }
 
+#include <unistd.h>
+
 static void report_msg(void *aux, char *msg) {
 	struct aux *aux_decomposed = (struct aux *) aux;
 	drawmsg(msg);
 	aux_decomposed->msg = msg;
+	/* TODO: Remove this sleep */
+	sleep(1);
 }
 
 static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
@@ -192,4 +232,5 @@ static void drawmsg(char *msg) {
 	move(LINES-2, 0);
 	clrtoeol();
 	addstr(msg);
+	refresh();
 }

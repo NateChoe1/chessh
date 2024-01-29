@@ -219,7 +219,7 @@ static int get_player_move(struct frontend *frontend, struct game *game, int pee
 	int move_code;
 	frontend->report_msg(frontend->aux, "Make your move");
 	for (;;) {
-		move = frontend->get_move(frontend->aux);
+		move = frontend->get_move(frontend->aux, get_player(game));
 		if (move == NULL) {
 			return IO_ERROR;
 		}

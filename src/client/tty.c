@@ -17,9 +17,10 @@
 
 /* The goal of chessh has always been to make a chess program that works on as
  * many devices as possible. That's why I used plaintext instead of HTML and
- * Javascript. I don't want our friends at MIT using a PDP-11 and telnet to
- * access the internet to get left out, so this frontend (which doesn't use
- * ncurses) will be supported for the forseeable future. */
+ * Javascript. I don't want our friends at MIT using a PDP-11 with a literal
+ * typewriter and telnet to access the internet to get left out, so this
+ * frontend (which doesn't use ncurses) will be supported for the forseeable
+ * future. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,14 +37,14 @@ struct aux {
 	char **piecesyms_black;
 };
 
-static char *get_move(void *aux);
+static char *get_move(void *aux, enum player player);
 static void report_error(void *aux, int code);
 static void report_msg(void *aux, char *msg);
 static void print_letters(enum player player);
 static void display_board(void *aux, struct game *game, enum player player);
 static void free_frontend(struct frontend *this);
 
-extern struct frontend *new_text_frontend(char **piecesyms_white, char **piecesyms_black) {
+struct frontend *new_text_frontend(char **piecesyms_white, char **piecesyms_black) {
 	struct frontend *ret;
 	struct aux *aux;
 	if ((ret = malloc(sizeof *ret)) == NULL) {
@@ -64,9 +65,10 @@ extern struct frontend *new_text_frontend(char **piecesyms_white, char **piecesy
 	return ret;
 }
 
-static char *get_move(void *aux) {
+static char *get_move(void *aux, enum player player) {
 	char *move;
 	UNUSED(aux);
+	UNUSED(player);
 	move = readline("Your move: ");
 	if (move == NULL) {
 		return NULL;

@@ -98,4 +98,7 @@ extern enum player get_player(struct game *game);
 
 extern int parse_move(struct game *game, char *move);
 
+extern char *move_to_string(struct move *move);
+extern char piece_to_char(enum piece_type piece);
+
 #endif

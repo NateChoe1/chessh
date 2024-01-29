@@ -21,7 +21,7 @@
 #include <client/chess.h>
 
 struct frontend {
-	char *(*get_move)(void *aux);
+	char *(*get_move)(void *aux, enum player player);
 
 	/* Used for things that the frontend can fix, currently only used when a
 	 * pawn is missing a promotion. The error always refers to the last

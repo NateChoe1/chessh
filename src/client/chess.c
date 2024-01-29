@@ -795,3 +795,32 @@ int parse_move(struct game *game, char *move) {
 	return make_move(game, &move_s);
 }
 
+char *move_to_string(struct move *move) {
+	char *ret;
+	if ((ret = malloc(6)) == NULL) {
+		return NULL;
+	}
+	ret[0] = move->c_i + 'a';
+	ret[1] = 8-move->r_i + '0';
+	ret[2] = move->c_f + 'a';
+	ret[3] = 8-move->r_f + '0';
+	if (move->promotion == EMPTY) {
+		ret[4] = '\0';
+		return ret;
+	}
+	ret[4] = piece_to_char(move->promotion);
+	ret[5] = '\0';
+	return ret;
+}
+
+char piece_to_char(enum piece_type piece) {
+	switch (piece) {
+	case ROOK: return 'r';
+	case KNIGHT: return 'n';
+	case BISHOP: return 'b';
+	case QUEEN: return 'q';
+	case KING: return 'k';
+	case PAWN: return 'p';
+	case EMPTY: default: return '\0';
+	}
+}
