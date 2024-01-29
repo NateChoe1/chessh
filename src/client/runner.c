@@ -33,45 +33,45 @@ static bool ask_user(char *prompt, bool def_answer);
 static int parse_op_move(struct game *game, int fd);
 static int get_player_move(struct frontend *frontend, struct game *game, int peer);
 
-static char **piecesyms_white;
-static char **piecesyms_black;
+static wchar_t **piecesyms_white;
+static wchar_t **piecesyms_black;
 
 /* I know these technically aren't emoji, but I don't care. */
-static char *emojisyms_white[] = {
-	[ROOK]   = "♜ ",
-	[KNIGHT] = "♞ ",
-	[BISHOP] = "♝ ",
-	[QUEEN]  = "♛ ",
-	[KING]   = "♚ ",
-	[PAWN]   = "♟︎ ",
-	[EMPTY]  = "  ",
+static wchar_t *emojisyms_white[] = {
+	[ROOK]   = L"♜ ",
+	[KNIGHT] = L"♞ ",
+	[BISHOP] = L"♝ ",
+	[QUEEN]  = L"♛ ",
+	[KING]   = L"♚ ",
+	[PAWN]   = L"♟︎ ",
+	[EMPTY]  = L"  ",
 };
-static char *emojisyms_black[] = {
-	[ROOK]   = "♖ ",
-	[KNIGHT] = "♘ ",
-	[BISHOP] = "♗ ",
-	[QUEEN]  = "♕ ",
-	[KING]   = "♔ ",
-	[PAWN]   = "♙ ",
-	[EMPTY]  = "  ",
+static wchar_t *emojisyms_black[] = {
+	[ROOK]   = L"♖ ",
+	[KNIGHT] = L"♘ ",
+	[BISHOP] = L"♗ ",
+	[QUEEN]  = L"♕ ",
+	[KING]   = L"♔ ",
+	[PAWN]   = L"♙ ",
+	[EMPTY]  = L"  ",
 };
-static char *portsyms_white[] = {
-	[ROOK]   = "R ",
-	[KNIGHT] = "N ",
-	[BISHOP] = "B ",
-	[QUEEN]  = "Q ",
-	[KING]   = "K ",
-	[PAWN]   = "P ",
-	[EMPTY]  = "  ",
+static wchar_t *portsyms_white[] = {
+	[ROOK]   = L"R ",
+	[KNIGHT] = L"N ",
+	[BISHOP] = L"B ",
+	[QUEEN]  = L"Q ",
+	[KING]   = L"K ",
+	[PAWN]   = L"P ",
+	[EMPTY]  = L"  ",
 };
-static char *portsyms_black[] = {
-	[ROOK]   = "r ",
-	[KNIGHT] = "n ",
-	[BISHOP] = "b ",
-	[QUEEN]  = "q ",
-	[KING]   = "k ",
-	[PAWN]   = "p ",
-	[EMPTY]  = "  ",
+static wchar_t *portsyms_black[] = {
+	[ROOK]   = L"r ",
+	[KNIGHT] = L"n ",
+	[BISHOP] = L"b ",
+	[QUEEN]  = L"q ",
+	[KING]   = L"k ",
+	[PAWN]   = L"p ",
+	[EMPTY]  = L"  ",
 };
 
 int run_client(int sock_fd) {
@@ -90,7 +90,7 @@ int run_client(int sock_fd) {
 		piecesyms_black = emojisyms_black;
 		/* This varies based on your terminal's background color */
 		if (!ask_user("Does that pawn symbol look white?", true)) {
-			char **backup = piecesyms_white;
+			wchar_t **backup = piecesyms_white;
 			piecesyms_white = piecesyms_black;
 			piecesyms_black = backup;
 		}

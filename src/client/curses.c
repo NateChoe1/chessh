@@ -27,8 +27,8 @@
 
 struct aux {
 	struct move move;
-	char **piecesyms_white;
-	char **piecesyms_black;
+	wchar_t **piecesyms_white;
+	wchar_t **piecesyms_black;
 	bool has_color;
 	/* always foreground, background. wb has a white foreground and a black
 	 * background. keep in mind these aren't literally #000 and #fff. */
@@ -53,7 +53,7 @@ static void free_frontend(struct frontend *this);
 static void reset_move(struct move *move);
 static void drawmsg(char *msg);
 
-struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
+struct frontend *new_curses_frontend(wchar_t **piecesyms_white, wchar_t **piecesyms_black) {
 	struct frontend *ret;
 	struct aux *aux;
 
@@ -194,10 +194,10 @@ static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
 	attron(COLOR_PAIR(pair));
 
 	if (piece->type == EMPTY || piece->player == WHITE) {
-		addstr(aux->piecesyms_white[piece->type]);
+		addwstr(aux->piecesyms_white[piece->type]);
 	}
 	else {
-		addstr(aux->piecesyms_black[piece->type]);
+		addwstr(aux->piecesyms_black[piece->type]);
 	}
 
 	attroff(COLOR_PAIR(pair));

@@ -33,8 +33,8 @@
 #include <client/frontend.h>
 
 struct aux {
-	char **piecesyms_white;
-	char **piecesyms_black;
+	wchar_t **piecesyms_white;
+	wchar_t **piecesyms_black;
 };
 
 static char *get_move(void *aux, enum player player);
@@ -44,7 +44,7 @@ static void print_letters(enum player player);
 static void display_board(void *aux, struct game *game, enum player player);
 static void free_frontend(struct frontend *this);
 
-struct frontend *new_text_frontend(char **piecesyms_white, char **piecesyms_black) {
+struct frontend *new_text_frontend(wchar_t **piecesyms_white, wchar_t **piecesyms_black) {
 	struct frontend *ret;
 	struct aux *aux;
 	if ((ret = malloc(sizeof *ret)) == NULL) {
@@ -111,10 +111,8 @@ static void display_board(void *aux, struct game *game, enum player player) {
 		for (int j = 0; j < 8; ++j) {
 			int col = player == 0 ? j : 7-j;
 			struct piece *piece = &game->board.board[row][col];
-			char **piecesyms = (piece->type == EMPTY || piece->player == WHITE) ? dissected->piecesyms_white : dissected->piecesyms_black;
-			char *sym = piecesyms[piece->type];
-
-			fputs(sym, stdout);
+			wchar_t **piecesyms = (piece->type == EMPTY || piece->player == WHITE) ? dissected->piecesyms_white : dissected->piecesyms_black;
+			printf("%ls", piecesyms[piece->type]);
 		}
 		printf(" %d\n", 8 - row);
 	}
