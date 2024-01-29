@@ -103,6 +103,8 @@ static void calculate_perft(struct game *game, int curr_depth, int max_depth, un
 		return;
 	}
 
+	old_depth = 0;
+
 	if (autotest && curr_depth == 1) {
 		old_depth = results[max_depth - 1];
 	}

@@ -20,6 +20,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 
@@ -30,6 +31,7 @@ static void match(int fd1, int fd2);
 
 int run_daemon(int sockfd) {
 	/* TODO: Make this more sophisticated */
+	signal(SIGPIPE, SIG_IGN);
 	for (;;) {
 		int p1fd, p2fd;
 		struct sockaddr_un addr;
@@ -73,13 +75,9 @@ static void match(int fd1, int fd2) {
 	p2set[0] = pipe2[0];
 	p2set[1] = pipe1[1];
 
-	if (sendfds(fd1, p1set, 2, &id1, sizeof id1) < 0 ||
-	    sendfds(fd2, p2set, 2, &id2, sizeof id2) < 0) {
-		goto error3;
-	}
+	sendfds(fd1, p1set, 2, &id1, sizeof id1);
+	sendfds(fd2, p2set, 2, &id2, sizeof id2);
 
-	return;
-error3:
 	close(pipe2[0]);
 	close(pipe2[1]);
 error2:

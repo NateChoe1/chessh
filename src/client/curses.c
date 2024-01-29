@@ -118,6 +118,8 @@ static void select_square(int *r_ret, int *c_ret, enum player player) {
 	curs_set(1);
 	for (;;) {
 		int ch;
+		MEVENT mevent;
+		move(r+1, c*2+2);
 		switch (ch = getch()) {
 		case 'h': c -= 1; break;
 		case 'j': r += 1; break;
@@ -127,6 +129,15 @@ static void select_square(int *r_ret, int *c_ret, enum player player) {
 		case KEY_UP: r -= 1 ; break;
 		case KEY_RIGHT: c += 1 ; break;
 		case KEY_DOWN: r += 1 ; break;
+
+		case KEY_MOUSE:
+			getmouse(&mevent);
+			if (!(mevent.bstate & BUTTON1_PRESSED)) {
+				break;
+			}
+			r = mevent.y - 1;
+			c = (mevent.x - 2) / 2;
+			/* fallthrough */
 		case ' ': case KEY_ENTER: case '\r': case '\n':
 			*r_ret = player == WHITE ? r : 7-r;
 			*c_ret = player == WHITE ? c : 7-c;
@@ -135,7 +146,6 @@ static void select_square(int *r_ret, int *c_ret, enum player player) {
 		}
 		r = (r+8) % 8;
 		c = (c+8) % 8;
-		move(r+1, c*2+2);
 	}
 }
 
