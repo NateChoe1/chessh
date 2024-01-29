@@ -498,6 +498,17 @@ static void move_unchecked(struct game *game, struct move *move, struct piece *c
 
 static bool piece_is_attacked(struct game *game, int r, int c, enum player player) {
 	enum player other_player = player == WHITE ? BLACK : WHITE;
+	bool ret = false;
+	enum piece_type old_type;
+	old_type = game->board.board[r][c].type;
+
+	/* If a pawn attacks an empty piece, `is_illegal` will think that that
+	 * empty space is safe, even though a piece that moves there is
+	 * attacked. */
+	if (old_type == EMPTY) {
+		game->board.board[r][c].type = PAWN;
+		game->board.board[r][c].player = player;
+	}
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
 			struct move move;
@@ -517,11 +528,15 @@ static bool piece_is_attacked(struct game *game, int r, int c, enum player playe
 			move.c_f = c;
 			move.promotion = QUEEN;
 			if (is_illegal(game, &move, &captured, &castle, other_player) >= 0) {
-				return true;
+				ret = true;
+				goto end;
 			}
 		}
 	}
-	return false;
+	ret = false;
+end:
+	game->board.board[r][c].type = old_type;
+	return ret;
 }
 
 static bool is_in_check(struct game *game, enum player player) {

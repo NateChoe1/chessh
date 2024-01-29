@@ -95,8 +95,8 @@ int run_client(int sock_fd) {
 	game = new_game();
 
 	/* TODO: Remove me */
-	//if (init_game(game, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -")) {
-	if (init_game(game, "r3k3/p1ppPpbr/bN2pnp1/4N3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQq -")) {
+	if (init_game(game, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -")) {
+	//if (init_game(game, "r3k3/p1ppPpbr/bN2pnp1/4N3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQq -")) {
 		puts("INVALID GAME!!!");
 		exit(EXIT_FAILURE);
 	}
