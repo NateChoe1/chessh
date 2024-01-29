@@ -20,7 +20,8 @@
 #include <client/frontend.h>
 
 /* TODO: Implement this */
-struct frontend *new_curses_frontend(char **piecesyms) {
-	(void) piecesyms;
+extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black) {
+	(void) piecesyms_white;
+	(void) piecesyms_black;
 	return NULL;
 }

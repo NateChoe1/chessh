@@ -102,10 +102,10 @@ int run_client(int sock_fd) {
 
 	frontend = NULL;
 	if (ask_user("Can you use ncurses? (If you don't know what this means, say 'y')", true)) {
-		frontend = new_curses_frontend(piecesyms);
+		frontend = new_curses_frontend(piecesyms_white, piecesyms_black);
 	}
 	else {
-		frontend = new_text_frontend(piecesyms);
+		frontend = new_text_frontend(piecesyms_white, piecesyms_black);
 	}
 	if (frontend == NULL) {
 		puts("Failed to initialize frontend, quitting");

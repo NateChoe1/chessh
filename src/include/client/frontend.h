@@ -34,7 +34,7 @@ struct frontend {
 	void *aux;
 };
 
-extern struct frontend *new_curses_frontend(char **piecesyms);
-extern struct frontend *new_text_frontend(char **piecesyms);
+extern struct frontend *new_curses_frontend(char **piecesyms_white, char **piecesyms_black);
+extern struct frontend *new_text_frontend(char **piecesyms_white, char **piecesyms_black);
 
 #endif

@@ -31,31 +31,42 @@
 #include <client/chess.h>
 #include <client/frontend.h>
 
+struct aux {
+	char **piecesyms_white;
+	char **piecesyms_black;
+};
+
 static char *get_move(void *aux);
 static void report_error(void *aux, int code);
 static void report_msg(void *aux, char *msg);
 static void print_letters(enum player player);
 static void display_board(void *aux, struct game *game, enum player player);
+static void free_frontend(struct frontend *this);
 
-struct frontend *new_text_frontend(char **piecesyms) {
+extern struct frontend *new_text_frontend(char **piecesyms_white, char **piecesyms_black) {
 	struct frontend *ret;
-	ret = malloc(sizeof *ret);
-	if (ret == NULL) {
+	struct aux *aux;
+	if ((ret = malloc(sizeof *ret)) == NULL) {
+		return NULL;
+	}
+	if ((aux = malloc(sizeof *aux)) == NULL) {
+		free(ret);
 		return NULL;
 	}
 	ret->get_move      = get_move;
 	ret->report_error  = report_error;
 	ret->report_msg    = report_msg;
 	ret->display_board = display_board;
-	ret->free          = (void (*)(struct frontend *)) free;
-	ret->aux = (void *) piecesyms;
+	ret->free          = free_frontend;
+	ret->aux           = aux;
+	aux->piecesyms_white = piecesyms_white;
+	aux->piecesyms_black = piecesyms_black;
 	return ret;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 static char *get_move(void *aux) {
 	char *move;
+	UNUSED(aux);
 	move = readline("Your move: ");
 	if (move == NULL) {
 		return NULL;
@@ -64,6 +75,7 @@ static char *get_move(void *aux) {
 }
 
 static void report_error(void *aux, int code) {
+	UNUSED(aux);
 	switch (code) {
 	case MISSING_PROMOTION:
 		puts("You're missing a promotion!");
@@ -75,9 +87,9 @@ static void report_error(void *aux, int code) {
 }
 
 static void report_msg(void *aux, char *msg) {
+	UNUSED(aux);
 	puts(msg);
 }
-#pragma GCC diagnostic pop
 
 static void print_letters(enum player player) {
 	if (player == WHITE) {
@@ -89,7 +101,7 @@ static void print_letters(enum player player) {
 }
 
 static void display_board(void *aux, struct game *game, enum player player) {
-	char **piecesyms = (char **) aux;
+	struct aux *dissected = (struct aux *) aux;
 	print_letters(player);
 	for (int i = 0; i < 8; ++i) {
 		int row = player == 0 ? i : 7-i;
@@ -97,6 +109,7 @@ static void display_board(void *aux, struct game *game, enum player player) {
 		for (int j = 0; j < 8; ++j) {
 			int col = player == 0 ? j : 7-j;
 			struct piece *piece = &game->board.board[row][col];
+			char **piecesyms = (piece->type == EMPTY || piece->player == WHITE) ? dissected->piecesyms_white : dissected->piecesyms_black;
 			char *sym = piecesyms[piece->type];
 
 			fputs(sym, stdout);
@@ -104,4 +117,9 @@ static void display_board(void *aux, struct game *game, enum player player) {
 		printf(" %d\n", 8 - row);
 	}
 	print_letters(player);
+}
+
+static void free_frontend(struct frontend *this) {
+	free(this->aux);
+	free(this);
 }
