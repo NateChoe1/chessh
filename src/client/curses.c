@@ -160,14 +160,10 @@ static void report_error(void *aux, int code) {
 	}
 }
 
-#include <unistd.h>
-
 static void report_msg(void *aux, char *msg) {
 	struct aux *aux_decomposed = (struct aux *) aux;
 	drawmsg(msg);
 	aux_decomposed->msg = msg;
-	/* TODO: Remove this sleep */
-	sleep(1);
 }
 
 static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
