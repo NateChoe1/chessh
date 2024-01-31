@@ -79,8 +79,6 @@ int recvfds(int src, int fds[], int fdcount,
 	size_t buff_len = CMSG_ALIGN(CMSG_SPACE(fdcount * sizeof *fds) + 99999);
 	char *buff = alloca(buff_len);
 
-	puts("RECVFDS CALLED");
-
 	msg.msg_name = NULL;
 	msg.msg_namelen = 0;
 
