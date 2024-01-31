@@ -76,7 +76,7 @@ int recvfds(int src, int fds[], int fdcount,
 	struct iovec iov;
 	ssize_t nr;
 	char buf[1];
-	size_t buff_len = CMSG_ALIGN(CMSG_SPACE(fdcount * sizeof *fds) + 99999);
+	size_t buff_len = CMSG_ALIGN(CMSG_SPACE(fdcount * sizeof *fds));
 	char *buff = alloca(buff_len);
 
 	msg.msg_name = NULL;
