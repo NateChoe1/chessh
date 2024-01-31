@@ -226,7 +226,9 @@ static void display_board(void *aux, struct game *game, enum player player) {
 }
 
 static void show_credit() {
-	mvaddstr(LINES-1, 0, CREDIT);
+	move(LINES-1, 0);
+	clrtoeol();
+	addstr(CREDIT);
 }
 
 static void free_frontend(struct frontend *this) {

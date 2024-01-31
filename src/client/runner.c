@@ -93,7 +93,7 @@ int run_client(int sock_fd) {
 		piecesyms_white = emojisyms_white;
 		piecesyms_black = emojisyms_black;
 		/* This varies based on your terminal's background color */
-		if (!ask_user("Does that pawn symbol look white?", true)) {
+		if (!ask_user("Does that king symbol look white?", true)) {
 			wchar_t **backup = piecesyms_white;
 			piecesyms_white = piecesyms_black;
 			piecesyms_black = backup;
