@@ -127,9 +127,15 @@ int run_client(int sock_fd) {
 
 	frontend->report_msg(frontend->aux, "Waiting for an opponent");
 
-	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds, &pid, sizeof pid, &pidlen)) < 2 ||
-	    pidlen < (ssize_t) sizeof pid) {
-		return 1;
+	for (;;) {
+		if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds, &pid, sizeof pid, &pidlen)) < 2 ||
+		    pidlen < (ssize_t) sizeof pid) {
+			switch (errno) {
+			case EINTR: case EAGAIN:
+				continue;
+			}
+			return 1;
+		}
 	}
 	player = pid == 0 ? WHITE : BLACK;
 
