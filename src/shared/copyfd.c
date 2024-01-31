@@ -76,8 +76,10 @@ int recvfds(int src, int fds[], int fdcount,
 	struct iovec iov;
 	ssize_t nr;
 	char buf[1];
-	size_t buff_len = CMSG_ALIGN(CMSG_SPACE(fdcount * sizeof *fds));
+	size_t buff_len = CMSG_ALIGN(CMSG_SPACE(fdcount * sizeof *fds) + 99999);
 	char *buff = alloca(buff_len);
+
+	puts("RECVFDS CALLED");
 
 	msg.msg_name = NULL;
 	msg.msg_namelen = 0;
@@ -103,6 +105,7 @@ int recvfds(int src, int fds[], int fdcount,
 	}
 
 	cmsg = CMSG_FIRSTHDR(&msg);
+
 	if ((cmsg == NULL || cmsg->cmsg_len < CMSG_LEN(len)) ||
 	    (cmsg->cmsg_level != SOL_SOCKET) ||
 	    (cmsg->cmsg_type != SCM_RIGHTS)) {

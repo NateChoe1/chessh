@@ -3,6 +3,9 @@
 cd /chessh
 make -B
 
+cd /chessh/src/frontends
+make -B
+
 passwd -d root
 useradd -m -d /guest guest
 echo "guest:guest" | chpasswd

@@ -136,6 +136,7 @@ int run_client(int sock_fd) {
 			}
 			return 1;
 		}
+		break;
 	}
 	player = pid == 0 ? WHITE : BLACK;
 

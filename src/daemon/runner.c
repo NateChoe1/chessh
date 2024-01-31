@@ -27,63 +27,67 @@
 #include <copyfd.h>
 #include <daemon/runner.h>
 
-static void match(int fd1, int fd2);
-
 int run_daemon(int sockfd) {
-	/* TODO: Make this more sophisticated */
 	signal(SIGPIPE, SIG_IGN);
 	for (;;) {
 		int p1fd, p2fd;
+		int p1set[2], p2set[2];
+		int pipe1[2], pipe2[2];
+		int id1, id2;
 		struct sockaddr_un addr;
 		socklen_t addrlen;
 
-		p1fd = accept(sockfd, (struct sockaddr *) &addr, &addrlen);
-		p2fd = accept(sockfd, (struct sockaddr *) &addr, &addrlen);
+		memset(&addr, 0, sizeof addr);
+		addrlen = 0;
 
-		match(p1fd, p2fd);
-	}
-}
+		if (random() % 2 == 0) {
+			id1 = 0;
+			id2 = 1;
+		}
+		else {
+			id1 = 1;
+			id2 = 0;
+		}
 
-static void match(int fd1, int fd2) {
-	int pipe1[2], pipe2[2];
-	int p1set[2], p2set[2];
+		if (pipe(pipe1) == -1) {
+			perror("pipe() failed");
+			goto error1;
+		}
+		if (pipe(pipe2) == -1) {
+			perror("pipe() failed");
+			goto error2;
+		}
 
-	/* Buffers to send player ids */
-	int id1, id2;
+		p1set[0] = pipe1[0];
+		p1set[1] = pipe2[1];
+		p2set[0] = pipe2[0];
+		p2set[1] = pipe1[1];
 
-	/* Randomize white and black  */
-	if (random() % 2 == 0) {
-		id1 = 0;
-		id2 = 1;
-	}
-	else {
-		id1 = 1;
-		id2 = 0;
-	}
+		/* I haven't used a do...while loop irl in MONTHS!! */
+		do {
+			p1fd = accept(sockfd, (struct sockaddr *) &addr, &addrlen);
+		} while (p1fd < 0);
 
-	if (pipe(pipe1) == -1) {
-		perror("pipe() failed");
-		goto error1;
-	}
-	if (pipe(pipe2) == -1) {
-		perror("pipe() failed");
-		goto error2;
-	}
-
-	p1set[0] = pipe1[0];
-	p1set[1] = pipe2[1];
-	p2set[0] = pipe2[0];
-	p2set[1] = pipe1[1];
-
-	sendfds(fd1, p1set, 2, &id1, sizeof id1);
-	sendfds(fd2, p2set, 2, &id2, sizeof id2);
-
-	close(pipe2[0]);
-	close(pipe2[1]);
+		/* If player 1 disconnects before player 2 joins, make player 2
+		 * wait */
+		for (;;) {
+			p2fd = accept(sockfd, (struct sockaddr *) &addr, &addrlen);
+			if (sendfds(p1fd, p1set, 2, &id1, sizeof id1) < 0) {
+				close(p1fd);
+				p1fd = p2fd;
+				continue;
+			}
+			sendfds(p2fd, p2set, 2, &id2, sizeof id2);
+			break;
+		}
+		close(p1fd);
+		close(p2fd);
+		close(pipe2[0]);
+		close(pipe2[1]);
 error2:
-	close(pipe1[0]);
-	close(pipe1[1]);
+		close(pipe1[0]);
+		close(pipe1[1]);
 error1:
-	close(fd1);
-	close(fd2);
+		continue;
+	}
 }
