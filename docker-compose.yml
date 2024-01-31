@@ -1,0 +1,9 @@
+version: "3"
+services:
+  natechoe.dev:
+    image: natechoe/chessh
+    container_name: chessh
+    ports:
+      - "2222:22"
+    restart:
+      always
