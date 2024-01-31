@@ -63,7 +63,6 @@ int sendfds(int dest, int fds[], int fdcount, void *data, size_t len) {
 	cmsg->cmsg_len = CMSG_LEN(fdcount * sizeof *fds);
 	memcpy(CMSG_DATA(cmsg), fds, fdcount * sizeof *fds);
 	if (sendmsg(dest, &msg, 0) < 0) {
-		perror("sendmsg() failed");
 		return -1;
 	}
 	return 0;
@@ -95,7 +94,6 @@ int recvfds(int src, int fds[], int fdcount,
 	msg.msg_controllen = buff_len;
 	nr = recvmsg(src, &msg, 0);
 	if (nr < 0) {
-		perror("recvmsg() failed");
 		return -1;
 	}
 	if (received_data != NULL) {
@@ -107,7 +105,6 @@ int recvfds(int src, int fds[], int fdcount,
 	if ((cmsg == NULL || cmsg->cmsg_len < CMSG_LEN(len)) ||
 	    (cmsg->cmsg_level != SOL_SOCKET) ||
 	    (cmsg->cmsg_type != SCM_RIGHTS)) {
-		fputs("bad cmsg received\n", stderr);
 		return -1;
 	}
 
