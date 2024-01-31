@@ -40,7 +40,7 @@ struct aux {
 #define BW 3
 #define BB 4
 
-#define CREDIT "created by nate choe <nate@natechoe.dev>"
+#define CREDIT "made by nate choe <nate@natechoe.dev>, https://github.com/natechoe1/chessh"
 
 static char *get_move(void *aux, enum player player);
 static void select_square(int *r_ret, int *c_ret, enum player player);
@@ -48,6 +48,7 @@ static void report_error(void *aux, int code);
 static void report_msg(void *aux, char *msg);
 static void draw_piece(struct aux *aux, struct game *game, int row, int col);
 static void display_board(void *aux, struct game *game, enum player player);
+static void show_credit();
 static void free_frontend(struct frontend *this);
 static void reset_move(struct move *move);
 static void drawmsg(struct aux *aux, char *msg);
@@ -219,8 +220,12 @@ static void display_board(void *aux, struct game *game, enum player player) {
 		}
 	}
 	drawmsg(aux_decomposed, aux_decomposed->msg);
-	mvaddstr(LINES-1, 0, CREDIT);
+	show_credit();
 	refresh();
+}
+
+static void show_credit() {
+	mvaddstr(LINES-1, 0, CREDIT);
 }
 
 static void free_frontend(struct frontend *this) {
@@ -243,6 +248,7 @@ static void drawmsg(struct aux *aux, char *msg) {
 	move(LINES-2, 0);
 	clrtoeol();
 	addstr(msg);
+	show_credit();
 	refresh();
 	aux->msg = msg;
 }
