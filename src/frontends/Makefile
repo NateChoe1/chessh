@@ -1,11 +1,11 @@
 SRC=$(wildcard *.c)
-OUT=$(subst .c,,$(SRC))
+OUT=$(subst .c,.exe,$(SRC))
 
 CFLAGS=-O2 -ggdb
 
 all: $(OUT)
 
-%: %.c
+%.exe: %.c
 	$(CC) $(CFLAGS) $< -o $@
 
 .PHONY: all
