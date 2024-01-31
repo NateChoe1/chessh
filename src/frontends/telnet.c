@@ -72,7 +72,7 @@ static void start_client(int clientfd) {
 	dup2(clientfd, 0);
 	dup2(clientfd, 1);
 	dup2(clientfd, 2);
-	execlp("telnet", "-a", "none", "-E", "/chessh/src/frontends/login.sh",
+	execlp("telnetd", "telnetd", "-a", "none", "-E", "/chessh/src/frontends/login.sh",
 			NULL);
 	exit(EXIT_FAILURE);
 }
