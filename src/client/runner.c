@@ -125,6 +125,8 @@ int run_client(int sock_fd) {
 		return 1;
 	}
 
+	frontend->report_msg("Waiting for an opponent");
+
 	if ((recvlen = recvfds(sock_fd, fds, sizeof fds / sizeof *fds, &pid, sizeof pid, &pidlen)) < 2 ||
 	    pidlen < (ssize_t) sizeof pid) {
 		return 1;
