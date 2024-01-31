@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include <locale.h>
 #include <unistd.h>
 
 #include <readline/readline.h>
@@ -38,21 +39,21 @@ static wchar_t **piecesyms_black;
 
 /* I know these technically aren't emoji, but I don't care. */
 static wchar_t *emojisyms_white[] = {
-	[ROOK]   = L"♜ ",
-	[KNIGHT] = L"♞ ",
-	[BISHOP] = L"♝ ",
-	[QUEEN]  = L"♛ ",
-	[KING]   = L"♚ ",
-	[PAWN]   = L"♟︎ ",
+	[ROOK]   = L"\u265c ",
+	[KNIGHT] = L"\u265e ",
+	[BISHOP] = L"\u265d ",
+	[QUEEN]  = L"\u265b ",
+	[KING]   = L"\u265a ",
+	[PAWN]   = L"\u265f ",
 	[EMPTY]  = L"  ",
 };
 static wchar_t *emojisyms_black[] = {
-	[ROOK]   = L"♖ ",
-	[KNIGHT] = L"♘ ",
-	[BISHOP] = L"♗ ",
-	[QUEEN]  = L"♕ ",
-	[KING]   = L"♔ ",
-	[PAWN]   = L"♙ ",
+	[ROOK]   = L"\u2656 ",
+	[KNIGHT] = L"\u2658 ",
+	[BISHOP] = L"\u2657 ",
+	[QUEEN]  = L"\u2655 ",
+	[KING]   = L"\u2654 ",
+	[PAWN]   = L"\u2659 ",
 	[EMPTY]  = L"  ",
 };
 static wchar_t *portsyms_white[] = {
@@ -84,8 +85,11 @@ int run_client(int sock_fd) {
 	struct frontend *frontend;
 	char *end_msg;
 
+	setlocale(LC_ALL, "C.utf8");
+
 	puts("Believe it or not, plaintext isn't actually that portable. I have to ask some questions:");
-	if (ask_user("Do you see a pawn symbol? ♟︎ ", true)) {
+	printf("%ls\n", L"\u265a ");
+	if (ask_user("Do you see a king symbol above this line?", true)) {
 		piecesyms_white = emojisyms_white;
 		piecesyms_black = emojisyms_black;
 		/* This varies based on your terminal's background color */

@@ -16,6 +16,7 @@
  * */
 
 #include <ctype.h>
+#include <locale.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -30,8 +31,6 @@ struct aux {
 	wchar_t **piecesyms_white;
 	wchar_t **piecesyms_black;
 	bool has_color;
-	/* always foreground, background. wb has a white foreground and a black
-	 * background. keep in mind these aren't literally #000 and #fff. */
 	char *msg;
 };
 
@@ -51,7 +50,7 @@ static void draw_piece(struct aux *aux, struct game *game, int row, int col);
 static void display_board(void *aux, struct game *game, enum player player);
 static void free_frontend(struct frontend *this);
 static void reset_move(struct move *move);
-static void drawmsg(char *msg);
+static void drawmsg(struct aux *aux, char *msg);
 
 struct frontend *new_curses_frontend(wchar_t **piecesyms_white, wchar_t **piecesyms_black) {
 	struct frontend *ret;
@@ -79,6 +78,7 @@ struct frontend *new_curses_frontend(wchar_t **piecesyms_white, wchar_t **pieces
 	reset_move(&aux->move);
 	aux->piecesyms_white = piecesyms_white;
 	aux->piecesyms_black = piecesyms_black;
+	aux->msg = NULL;
 	if (has_colors()) {
 		aux->has_color = true;
 		start_color();
@@ -101,9 +101,9 @@ static char *get_move(void *aux, enum player player) {
 		goto end;
 	}
 
-	drawmsg("Select the start location for your move");
+	drawmsg(aux_decomposed, "Select the start location for your move");
 	select_square(&move->r_i, &move->c_i, player);
-	drawmsg("Select the end location for your move");
+	drawmsg(aux_decomposed, "Select the end location for your move");
 	select_square(&move->r_f, &move->c_f, player);
 
 end:
@@ -153,27 +153,25 @@ static void report_error(void *aux, int code) {
 	struct aux *aux_decomposed = (struct aux *) aux;
 	switch (code) {
 	case MISSING_PROMOTION:
-		drawmsg("What would you like to promote to? [qrnb]");
+		drawmsg(aux_decomposed, "What would you like to promote to? [qrnb]");
 		for (;;) {
 			switch (tolower(getch())) {
 			case 'q': aux_decomposed->move.promotion = QUEEN; break;
 			case 'r': aux_decomposed->move.promotion = ROOK; break;
 			case 'n': aux_decomposed->move.promotion = KNIGHT; break;
 			case 'b': aux_decomposed->move.promotion = BISHOP; break;
-			default: drawmsg("Invalid promotion [qrnb]"); continue;
+			default: drawmsg(aux_decomposed, "Invalid promotion [qrnb]"); continue;
 			}
 			break;
 		}
 		break;
 	default:
-		drawmsg("Warning: Unknown warning received from backend");
+		drawmsg(aux_decomposed, "Warning: Unknown warning received from backend");
 	}
 }
 
 static void report_msg(void *aux, char *msg) {
-	struct aux *aux_decomposed = (struct aux *) aux;
-	drawmsg(msg);
-	aux_decomposed->msg = msg;
+	drawmsg((struct aux *) aux, msg);
 }
 
 static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
@@ -191,7 +189,9 @@ static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
 	case 3: pair = WW; break;
 	}
 
-	attron(COLOR_PAIR(pair));
+	if (aux->has_color) {
+		attron(COLOR_PAIR(pair));
+	}
 
 	if (piece->type == EMPTY || piece->player == WHITE) {
 		addwstr(aux->piecesyms_white[piece->type]);
@@ -218,14 +218,16 @@ static void display_board(void *aux, struct game *game, enum player player) {
 			draw_piece(aux_decomposed, game, row, col);
 		}
 	}
-	drawmsg(aux_decomposed->msg);
+	drawmsg(aux_decomposed, aux_decomposed->msg);
 	mvaddstr(LINES-1, 0, CREDIT);
 	refresh();
 }
 
 static void free_frontend(struct frontend *this) {
+	struct aux *aux_decomposed = (struct aux *) this->aux;
 	endwin();
-	free(this->aux);
+	free(aux_decomposed->msg);
+	free(aux_decomposed);
 	free(this);
 }
 
@@ -234,9 +236,13 @@ static void reset_move(struct move *move) {
 	move->promotion = EMPTY;
 }
 
-static void drawmsg(char *msg) {
+static void drawmsg(struct aux *aux, char *msg) {
+	if (msg == NULL) {
+		return;
+	}
 	move(LINES-2, 0);
 	clrtoeol();
 	addstr(msg);
 	refresh();
+	aux->msg = msg;
 }
