@@ -56,6 +56,7 @@ static void drawmsg(struct aux *aux, char *msg);
 struct frontend *new_curses_frontend(wchar_t **piecesyms_white, wchar_t **piecesyms_black) {
 	struct frontend *ret;
 	struct aux *aux;
+	WINDOW *win;
 
 	if ((ret = malloc(sizeof *ret)) == NULL) {
 		return NULL;
@@ -64,11 +65,11 @@ struct frontend *new_curses_frontend(wchar_t **piecesyms_white, wchar_t **pieces
 		return NULL;
 	}
 
-	initscr();
+	win = initscr();
 	cbreak();
 	noecho();
 	curs_set(0);
-	keypad(curscr, TRUE);
+	keypad(win, TRUE);
 
 	ret->get_move = get_move;
 	ret->report_msg = report_msg;
