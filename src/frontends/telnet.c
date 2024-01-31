@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <pwd.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -12,6 +14,7 @@ static void start_client(int clientfd);
 int main() {
 	int sockfd, opt;
 	struct sockaddr_in addr;
+	struct passwd *guest;
 
 	signal(SIGCHLD, SIG_IGN);
 
@@ -33,6 +36,18 @@ int main() {
 	if (bind(sockfd, (struct sockaddr *) &addr, sizeof addr) < 0) {
 		perror("bind() failed");
 		return 1;
+	}
+
+	guest = getpwnam("guest");
+	if (guest == NULL) {
+		fputs("Failed to find guest user\n", stderr);
+		return 1;
+	}
+	else {
+		if (seteuid(guest->pw_uid)) {
+			perror("seteuid() failed");
+			return 1;
+		}
 	}
 
 	if (listen(sockfd, 1024) < 0) {
