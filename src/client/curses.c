@@ -173,6 +173,7 @@ static void report_error(void *aux, int code) {
 
 static void report_msg(void *aux, char *msg) {
 	drawmsg((struct aux *) aux, msg);
+	show_credit();
 }
 
 static void draw_piece(struct aux *aux, struct game *game, int row, int col) {
